@@ -1,0 +1,107 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "myos",
+  "projectDescription": "Python SDK for managing OpenStack cloud infrastructure with an intuitive object-oriented interface",
+  "theme": "aspen",
+  "primaryColor": "#DA4D4D",
+  "lightColor": "#FF6B6B",
+  "darkColor": "#B03030",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/cloud",
+              "concepts/authentication"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/managing-users",
+              "guides/managing-projects",
+              "guides/managing-servers",
+              "guides/managing-hypervisors",
+              "guides/working-with-domains"
+            ]
+          },
+          {
+            "group": "Examples",
+            "pages": [
+              "examples/user-info",
+              "examples/project-resources",
+              "examples/server-details",
+              "examples/hypervisor-servers",
+              "examples/advanced-queries"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Core Classes",
+            "pages": [
+              "api/cloud",
+              "api/user",
+              "api/project",
+              "api/server"
+            ]
+          },
+          {
+            "group": "Resource Management",
+            "pages": [
+              "api/hypervisor",
+              "api/domain",
+              "api/flavor",
+              "api/image",
+              "api/floating-ip",
+              "api/quota"
+            ]
+          },
+          {
+            "group": "Utilities",
+            "pages": [
+              "api/entitylist"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Object-oriented OpenStack resource management",
+    "Lazy-loading properties for efficient API usage",
+    "Relationship traversal between resources (user->projects->servers)",
+    "Custom EntityList with filter, sort, and map operations",
+    "Multi-cloud support with configurable cloud credentials",
+    "Comprehensive resource coverage (users, projects, servers, hypervisors, flavors, images, IPs, quotas)"
+  ],
+  "publicApiSurface": [
+    "Cloud(cloud='admin')",
+    "User(user_id=None, name=None, domain_name=None, cloud=Cloud())",
+    "Project(project_id=None, name=None, cloud=Cloud())",
+    "Server(server_id=None, name=None, cloud=Cloud())",
+    "Hypervisor(hypervisor_id=None, name=None, cloud=Cloud())",
+    "Domain(domain_id=None, name=None, cloud=Cloud())",
+    "Flavor(flavor_id=None, name=None, cloud=Cloud())",
+    "Image(image_id=None, name=None, cloud=Cloud())",
+    "FloatingIP(fip_id=None, name=None, cloud=Cloud())",
+    "Quota(data)",
+    "EntityList.filter(filter_lambda)",
+    "EntityList.sort(sort_lambda)",
+    "EntityList.map(map_lambda)"
+  ]
+}
