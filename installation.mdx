@@ -64,21 +64,29 @@ The myos SDK depends on the OpenStack CLI (`python-openstackclient`) to interact
   </Step>
 
   <Step title="Install myos SDK">
-    Install the myos package using pip:
+    Clone the myos repository and add it to your Python path:
 
     ```bash
-    pip install myos
+    git clone https://github.com/jose-caballero/myos.git
+    cd myos
     ```
 
-    <Tip>
-      For development installations, you can install directly from the source:
-      
-      ```bash
-      git clone https://github.com/your-org/myos.git
-      cd myos
-      pip install -e .
-      ```
-    </Tip>
+    <Info>
+      Since myos doesn't have a setup.py, you can either add the directory to your `PYTHONPATH` or install it in development mode if you create a setup.py file.
+    </Info>
+
+    To use myos, ensure the directory is in your Python path:
+
+    ```bash
+    export PYTHONPATH="${PYTHONPATH}:/path/to/myos"
+    ```
+
+    Or add it programmatically in your Python scripts:
+
+    ```python
+    import sys
+    sys.path.insert(0, '/path/to/myos')
+    ```
   </Step>
 
   <Step title="Verify Installation">
