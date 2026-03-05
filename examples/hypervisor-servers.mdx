@@ -1,0 +1,365 @@
+---
+title: "Hypervisor Servers"
+description: "Query hypervisors and find all VMs running on specific hosts"
+---
+
+## Overview
+
+The `Hypervisor` class allows you to query physical hypervisor hosts and discover all virtual machines running on them, including their owners and configurations.
+
+## List All Hypervisors
+
+Get the complete list of hypervisors in your cloud:
+
+```python
+from myos.cloud import Cloud
+
+cloud = Cloud("admin")
+hypervisors = cloud.hypervisors
+
+print(f"Total hypervisors: {len(hypervisors)}")
+# Output: Total hypervisors: 656
+
+# Access the first hypervisor
+hv = hypervisors[0]
+print(hv.hostname)
+# Output: 'hv300.matrix.net'
+```
+
+<Info>
+The `hypervisors` property returns an `EntityList` of `Hypervisor` objects, which supports filtering and sorting operations.
+</Info>
+
+## Query a Specific Hypervisor
+
+Retrieve information about a specific hypervisor by name:
+
+```python
+from myos.hypervisor import Hypervisor
+
+hv = Hypervisor(name='hv1.matrix.net')
+
+print(hv.hostname)
+# Output: 'hv1.matrix.net'
+
+print(hv.id)
+print(hv.status)
+# Output: 'enabled'
+
+print(hv.state)
+# Output: 'up'
+```
+
+## Servers on a Hypervisor
+
+Get all virtual machines running on a specific hypervisor:
+
+<CodeGroup>
+
+```python List Hypervisor Servers
+from myos.hypervisor import Hypervisor
+
+hv = Hypervisor(name='hv1.matrix.net')
+servers = hv.servers
+
+print(f"Servers on {hv.hostname}: {len(servers)}")
+
+for server in servers:
+    print(f"  {server.name} ({server.id})")
+```
+
+```python Output
+Servers on hv1.matrix.net: 2
+  node1 (fc3ca316-c59a-4604-abf7)
+  node2 (ab3fff55-c00b-aa65-45ab)
+```
+
+</CodeGroup>
+
+## Server Owners on a Hypervisor
+
+Find out who owns each VM on a hypervisor:
+
+<CodeGroup>
+
+```python Show Server Owners
+from myos.hypervisor import Hypervisor
+
+hv = Hypervisor(name='hv1.matrix.net')
+servers = hv.servers
+
+for server in servers:
+    user = server.user
+    print(f"{server.name} {server.id} {user.name} {user.id} {user.email}")
+```
+
+```python Output
+node1 fc3ca316-c59a-4604-abf7 neo e093655abf neo@matrix.net
+node2 ab3fff55-c00b-aa65-45ab trinity ad10f44b0d trinity@matrix.net
+```
+
+</CodeGroup>
+
+<Note>
+Each server object provides full access to its owner's information through the `user` property.
+</Note>
+
+## Hypervisor Resource Usage
+
+Analyze resource usage on a hypervisor:
+
+```python
+from myos.hypervisor import Hypervisor
+
+def analyze_hypervisor(hostname):
+    """Analyze resource usage on a hypervisor"""
+    hv = Hypervisor(name=hostname)
+    servers = hv.servers
+    
+    print(f"Hypervisor: {hv.hostname}")
+    print(f"Status: {hv.status}")
+    print(f"State: {hv.state}")
+    print(f"\nServers: {len(servers)}")
+    
+    # Calculate total resources used
+    total_cpus = 0
+    total_ram = 0
+    total_disk = 0
+    
+    for server in servers:
+        flavor = server.flavor
+        total_cpus += flavor.cpu
+        total_ram += flavor.ram
+        total_disk += flavor.disk
+    
+    print(f"\nTotal Resources Allocated:")
+    print(f"  CPUs: {total_cpus}")
+    print(f"  RAM: {total_ram / 1024:.2f} GB")
+    print(f"  Disk: {total_disk} GB")
+    
+    # Show breakdown by user
+    print(f"\nServers by User:")
+    user_counts = {}
+    for server in servers:
+        email = server.user.email
+        user_counts[email] = user_counts.get(email, 0) + 1
+    
+    for email, count in sorted(user_counts.items()):
+        print(f"  {email}: {count} server(s)")
+
+# Run the analysis
+analyze_hypervisor('hv1.matrix.net')
+```
+
+## Find Hypervisors by Status
+
+Filter hypervisors based on their status:
+
+```python
+from myos.cloud import Cloud
+
+cloud = Cloud("admin")
+hypervisors = cloud.hypervisors
+
+# Find all active hypervisors
+active_hvs = hypervisors.filter(lambda hv: hv.status == 'enabled' and hv.state == 'up')
+
+print(f"Active hypervisors: {len(active_hvs)}")
+for hv in active_hvs:
+    print(f"  {hv.hostname}")
+```
+
+<Tip>
+See the [Advanced Queries](/examples/advanced-queries) page for more filtering and sorting examples.
+</Tip>
+
+## Find Empty Hypervisors
+
+Identify hypervisors with no running servers:
+
+```python
+from myos.cloud import Cloud
+
+cloud = Cloud("admin")
+hypervisors = cloud.hypervisors
+
+# Filter for empty hypervisors
+empty_hvs = hypervisors.filter(lambda hv: len(hv.servers) == 0)
+
+print(f"Empty hypervisors: {len(empty_hvs)}")
+for hv in empty_hvs:
+    print(f"  {hv.hostname}")
+```
+
+## Find Overloaded Hypervisors
+
+Identify hypervisors with many VMs:
+
+```python
+from myos.cloud import Cloud
+
+cloud = Cloud("admin")
+hypervisors = cloud.hypervisors
+
+# Find hypervisors with more than 20 VMs
+busy_hvs = hypervisors.filter(lambda hv: len(hv.servers) > 20)
+
+# Sort by number of servers (descending)
+busy_hvs = busy_hvs.sort(lambda hv: -len(hv.servers))
+
+print(f"Busy hypervisors: {len(busy_hvs)}")
+for hv in busy_hvs:
+    print(f"  {hv.hostname}: {len(hv.servers)} servers")
+```
+
+## Group Servers by Hypervisor
+
+Find which hypervisors are hosting servers from a specific project:
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Group servers by hypervisor
+hv_map = {}
+for server in servers:
+    hv_name = server.hypervisor.hostname
+    if hv_name not in hv_map:
+        hv_map[hv_name] = []
+    hv_map[hv_name].append(server.name)
+
+print(f"Project '{project.name}' servers by hypervisor:")
+for hv_name, server_names in sorted(hv_map.items()):
+    print(f"\n{hv_name} ({len(server_names)} servers):")
+    for name in server_names:
+        print(f"  - {name}")
+```
+
+## Hypervisor Summary Report
+
+Generate a comprehensive report for a hypervisor:
+
+```python
+from myos.hypervisor import Hypervisor
+
+def hypervisor_report(hostname):
+    """Generate a detailed hypervisor report"""
+    hv = Hypervisor(name=hostname)
+    servers = hv.servers
+    
+    print(f"=" * 60)
+    print(f"Hypervisor Report: {hv.hostname}")
+    print(f"=" * 60)
+    print(f"ID: {hv.id}")
+    print(f"Status: {hv.status}")
+    print(f"State: {hv.state}")
+    print(f"Total Servers: {len(servers)}")
+    
+    # Server status breakdown
+    status_counts = {}
+    for server in servers:
+        status = server.status
+        status_counts[status] = status_counts.get(status, 0) + 1
+    
+    print(f"\nServer Status:")
+    for status, count in sorted(status_counts.items()):
+        print(f"  {status}: {count}")
+    
+    # Flavor breakdown
+    flavor_counts = {}
+    for server in servers:
+        flavor = server.flavor.name
+        flavor_counts[flavor] = flavor_counts.get(flavor, 0) + 1
+    
+    print(f"\nFlavors in Use:")
+    for flavor, count in sorted(flavor_counts.items(), key=lambda x: -x[1]):
+        print(f"  {flavor}: {count}")
+    
+    # Image breakdown
+    image_counts = {}
+    for server in servers:
+        image = server.image.name
+        image_counts[image] = image_counts.get(image, 0) + 1
+    
+    print(f"\nImages in Use:")
+    for image, count in sorted(image_counts.items(), key=lambda x: -x[1]):
+        print(f"  {image}: {count}")
+    
+    # Unique users
+    unique_users = set(server.user.email for server in servers)
+    print(f"\nUnique Users: {len(unique_users)}")
+    
+    print(f"=" * 60)
+
+# Generate report
+hypervisor_report('hv1.matrix.net')
+```
+
+## Using Different Clouds
+
+Query hypervisors from a different cloud:
+
+```python
+from myos.hypervisor import Hypervisor
+from myos.cloud import Cloud
+
+dev_cloud = Cloud("admin-dev")
+hv = Hypervisor(name="hv400.matrix.net", cloud=dev_cloud)
+
+print(hv.hostname)
+print(f"Servers: {len(hv.servers)}")
+```
+
+<Info>
+When working with multiple clouds, create a `Cloud` instance and pass it to your resource objects.
+</Info>
+
+## Migration Planning
+
+Identify servers on a hypervisor for maintenance planning:
+
+```python
+from myos.hypervisor import Hypervisor
+
+def plan_maintenance(hostname):
+    """List all stakeholders affected by hypervisor maintenance"""
+    hv = Hypervisor(name=hostname)
+    servers = hv.servers
+    
+    print(f"Maintenance Planning for: {hv.hostname}")
+    print(f"Affected Servers: {len(servers)}")
+    
+    # Get unique user emails for notifications
+    users = set()
+    for server in servers:
+        users.add(server.user.email)
+    
+    print(f"\nUsers to Notify: {len(users)}")
+    for email in sorted(users):
+        user_servers = [s for s in servers if s.user.email == email]
+        print(f"  {email}: {len(user_servers)} server(s)")
+        for server in user_servers:
+            print(f"    - {server.name}")
+
+# Plan maintenance
+plan_maintenance('hv1.matrix.net')
+```
+
+## Available Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `hostname` | str | Hypervisor hostname |
+| `name` | str | Alias for hostname |
+| `id` | str | Hypervisor unique identifier |
+| `status` | str | Hypervisor status (enabled/disabled) |
+| `state` | str | Hypervisor state (up/down) |
+| `servers` | EntityList | List of servers running on the hypervisor |
+
+## Next Steps
+
+- Explore [Server Details](/examples/server-details) for more information about VMs
+- Learn [Advanced Queries](/examples/advanced-queries) for complex filtering
+- See [Project Resources](/examples/project-resources) for project-level queries

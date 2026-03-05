@@ -1,0 +1,80 @@
+---
+title: 'Image'
+description: 'API reference for the Image class'
+---
+
+## Image
+
+The `Image` class provides an interface to interact with OpenStack images, allowing you to retrieve information about virtual machine images and the servers using them.
+
+### Constructor
+
+```python
+Image(image_id=None, name=None, cloud=Cloud())
+```
+
+Initialize an Image instance.
+
+<ParamField path="image_id" type="str" optional>
+  The unique identifier of the image. Either `image_id` or `name` should be provided.
+</ParamField>
+
+<ParamField path="name" type="str" optional>
+  The name of the image. Either `image_id` or `name` should be provided.
+</ParamField>
+
+<ParamField path="cloud" type="Cloud" default="Cloud()">
+  The Cloud instance to use for OpenStack operations. Defaults to a new Cloud instance.
+</ParamField>
+
+### Properties
+
+#### name
+
+```python
+@property
+def name(self) -> str
+```
+
+<ResponseField name="name" type="str">
+  Returns the name associated to this Image.
+</ResponseField>
+
+#### id
+
+```python
+@property
+def id(self) -> str
+```
+
+<ResponseField name="id" type="str">
+  Returns the image_id associated to this Image.
+</ResponseField>
+
+#### servers
+
+```python
+@property
+def servers(self) -> EntityList
+```
+
+<ResponseField name="servers" type="EntityList">
+  Returns all Servers using this Image.
+</ResponseField>
+
+### Usage Example
+
+```python
+from myos.image import Image
+
+# Initialize image by name
+image = Image(name="rocky-8-aqml")
+
+# Access image properties
+print(image.name)  # Get image name
+print(image.id)    # Get image ID
+
+# List servers using this image
+for server in image.servers:
+    print(server.id)
+```

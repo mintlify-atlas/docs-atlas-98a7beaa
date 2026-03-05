@@ -1,0 +1,131 @@
+---
+title: 'User'
+description: 'Interface for managing OpenStack users'
+---
+
+## User
+
+The `User` class represents an OpenStack user and provides access to user properties, projects, and servers.
+
+### Constructor
+
+```python
+User(user_id=None, name=None, domain_name=None, cloud=Cloud())
+```
+
+<ParamField path="user_id" type="str" optional>
+  The unique identifier for the user. Use either `user_id` or `name` to identify the user.
+</ParamField>
+
+<ParamField path="name" type="str" optional>
+  The name of the user. Use either `user_id` or `name` to identify the user.
+</ParamField>
+
+<ParamField path="domain_name" type="str" optional>
+  The domain name associated with the user. Required when using `name` parameter.
+</ParamField>
+
+<ParamField path="cloud" type="Cloud" default="Cloud()">
+  The Cloud instance to use for API calls. Defaults to a new Cloud() instance.
+</ParamField>
+
+### Properties
+
+<ResponseField name="name" type="str">
+  Returns the name associated to this User
+  
+  ```python
+  user = User(user_id="abc123")
+  print(user.name)
+  ```
+</ResponseField>
+
+<ResponseField name="domain" type="Domain">
+  Returns the Domain associated to this User
+  
+  ```python
+  user = User(name="wup22514", domain_name="stfc")
+  print(user.domain.name)
+  ```
+</ResponseField>
+
+<ResponseField name="id" type="str">
+  Returns the user_id associated to this User
+  
+  ```python
+  user = User(name="admin-user")
+  print(user.id)
+  ```
+</ResponseField>
+
+<ResponseField name="email" type="str">
+  Returns the email associated to this User ID
+  
+  ```python
+  user = User(user_id="abc123")
+  print(user.email)
+  ```
+</ResponseField>
+
+<ResponseField name="description" type="str">
+  Returns the description associated to this User ID
+  
+  ```python
+  user = User(user_id="abc123")
+  print(user.description)
+  ```
+</ResponseField>
+
+<ResponseField name="projects" type="EntityList[Project]">
+  Returns the list of Projects this user has access to
+  
+  ```python
+  user = User(name="wup22514", domain_name="stfc")
+  projects = user.projects
+  for project in projects:
+      print(f"Project: {project.name}")
+  ```
+</ResponseField>
+
+<ResponseField name="servers" type="EntityList[Server]">
+  Returns all Servers created by this User
+  
+  ```python
+  user = User(name="wup22514", domain_name="stfc")
+  servers = user.servers
+  for server in servers:
+      print(f"Server: {server.name} - Status: {server.status}")
+  ```
+</ResponseField>
+
+## Usage Example
+
+```python
+from myos.user import User
+from myos.cloud import Cloud
+
+# Initialize user by ID
+user = User(user_id="d0b0337d0d3aff182ebb41ff5581ea057c18daeaaeda3b3cc56adce83d6b67d1")
+print(f"User name: {user.name}")
+print(f"User email: {user.email}")
+
+# Initialize user by name
+user = User(name="wup22514", domain_name="stfc")
+print(f"User ID: {user.id}")
+print(f"Domain: {user.domain.name}")
+
+# Get user's projects
+projects = user.projects
+for project in projects:
+    print(f"Project: {project.name} (ID: {project.id})")
+
+# Get user's servers
+servers = user.servers
+print(f"Total servers: {len(servers)}")
+for server in servers:
+    print(f"  - {server.name}: {server.status}")
+
+# Use custom cloud configuration
+custom_cloud = Cloud("production")
+user = User(name="admin", cloud=custom_cloud)
+```

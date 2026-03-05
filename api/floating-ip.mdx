@@ -1,0 +1,118 @@
+---
+title: 'FloatingIP'
+description: 'API reference for the FloatingIP class'
+---
+
+## FloatingIP
+
+The `FloatingIP` class provides an interface to interact with OpenStack floating IPs, allowing you to retrieve information about floating IP addresses and their associations.
+
+### Constructor
+
+```python
+FloatingIP(fip_id=None, name=None, cloud=Cloud())
+```
+
+Initialize a FloatingIP instance.
+
+<ParamField path="fip_id" type="str" optional>
+  The unique identifier of the floating IP. Either `fip_id` or `name` should be provided.
+</ParamField>
+
+<ParamField path="name" type="str" optional>
+  The floating IP address value. Either `fip_id` or `name` should be provided.
+</ParamField>
+
+<ParamField path="cloud" type="Cloud" default="Cloud()">
+  The Cloud instance to use for OpenStack operations. Defaults to a new Cloud instance.
+</ParamField>
+
+### Properties
+
+#### ip
+
+```python
+@property
+def ip(self) -> str
+```
+
+<ResponseField name="ip" type="str">
+  Returns the Floating IP value.
+</ResponseField>
+
+#### name
+
+```python
+@property
+def name(self) -> str
+```
+
+<ResponseField name="name" type="str">
+  Returns the Floating IP value. Note: `name` and `ip` are the same thing for this class.
+</ResponseField>
+
+#### id
+
+```python
+@property
+def id(self) -> str
+```
+
+<ResponseField name="id" type="str">
+  Returns the FIP ID associated to this Floating IP.
+</ResponseField>
+
+#### fixed_ip
+
+```python
+@property
+def fixed_ip(self) -> str
+```
+
+<ResponseField name="fixed_ip" type="str">
+  Returns the Fixed IP associated to this Floating IP.
+</ResponseField>
+
+#### port
+
+```python
+@property
+def port(self) -> str
+```
+
+<ResponseField name="port" type="str">
+  Returns the port associated to this Floating IP.
+</ResponseField>
+
+#### project
+
+```python
+@property
+def project(self) -> Project
+```
+
+<ResponseField name="project" type="Project">
+  Returns the Project associated to this Floating IP.
+</ResponseField>
+
+### Usage Example
+
+```python
+from myos.ip import FloatingIP
+
+# Initialize floating IP by IP address
+fip = FloatingIP(name="192.168.1.100")
+
+# Initialize by ID
+fip = FloatingIP(fip_id="abc123-def456-ghi789")
+
+# Access floating IP properties
+print(fip.ip)         # Get the floating IP address
+print(fip.id)         # Get the floating IP ID
+print(fip.fixed_ip)   # Get the associated fixed IP
+print(fip.port)       # Get the associated port ID
+
+# Get the project that owns this floating IP
+project = fip.project
+print(project.id)
+```

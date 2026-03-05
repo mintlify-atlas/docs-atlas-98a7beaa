@@ -1,80 +1,349 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get started with myos SDK - query users, projects, and servers in your OpenStack cloud
 ---
 
-## Get started in three steps
+## Introduction
 
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+This quickstart guide will help you get up and running with myos in minutes. You'll learn how to query users, projects, and servers from your OpenStack cloud using the myos SDK.
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Make sure you've completed the [installation](/installation) steps before continuing.
 </Note>
+
+## Your First Query
+
+Let's start with a simple example - querying information about a user.
+
+### Query a User
+
+Open a Python interpreter and try the following:
+
+<CodeGroup>
+```python By Name
+from myos.user import User
+
+# Query user by name and domain
+user = User(name='wup22514', domain_name='stfc')
+
+# Access user properties
+print(f"User ID: {user.id}")
+print(f"Email: {user.email}")
+print(f"Description: {user.description}")
+```
+
+```python By ID
+from myos.user import User
+
+# Query user by ID
+user = User(user_id='d0b0337d0d3aff182ebb41ff5581ea057c18daeaaeda3b3cc56adce83d6b67d1')
+
+# Access user properties
+print(f"Name: {user.name}")
+print(f"Email: {user.email}")
+print(f"Domain: {user.domain.name}")
+```
+</CodeGroup>
+
+<Info>
+  **Lazy Loading**: myos uses lazy loading - data is only fetched from OpenStack when you access a property. This makes the SDK efficient and fast.
+</Info>
+
+### List User's Projects
+
+Once you have a user object, you can easily access related resources:
+
+```python
+from myos.user import User
+
+user = User(name='wup22514', domain_name='stfc')
+
+# Get all projects the user has access to
+projects = user.projects
+
+for project in projects:
+    print(f"{project.id} - {project.name}")
+```
+
+<details>
+<summary>Example Output</summary>
+
+```
+11d48058d9484acfbce827e95fd5e9fc - Tier-1 Test Internal
+15098398e6fb4dffaa7fd4e8b8a15046 - Jupyter-Training
+2d8252b430c2405da24d74df2004c24b - Condor
+35429791ecb441f6ad8e95cccb3117f6 - Cloud-Jupyter-Dev
+8e20e5fce11349f295751d834aa361b0 - Cloud-Jupyter-Prod
+```
+</details>
+
+## Query a Project
+
+Projects are a central concept in OpenStack. Here's how to work with them:
+
+<CodeGroup>
+```python By Name
+from myos.project import Project
+
+# Query project by name
+project = Project(name='Condor')
+
+print(f"Project ID: {project.id}")
+print(f"Project Name: {project.name}")
+```
+
+```python By ID
+from myos.project import Project
+
+# Query project by ID
+project = Project(project_id='2d8252b430c2405da24d74df2004c24b')
+
+print(f"Project Name: {project.name}")
+```
+</CodeGroup>
+
+### List Project Resources
+
+Once you have a project, you can query its users, servers, and other resources:
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+
+# List all users with access to this project
+users = project.users
+print(f"Users with access: {len(users)}")
+for user in users:
+    print(f"  - {user.name}: {user.email}")
+
+# List all servers in this project
+servers = project.servers
+print(f"\nTotal servers: {len(servers)}")
+for server in servers:
+    print(f"  - {server.name} ({server.id})")
+
+# List floating IPs
+fips = project.fips
+print(f"\nFloating IPs: {len(fips)}")
+for fip in fips:
+    print(f"  - {fip.ip}")
+```
+
+### Check Project Quotas
+
+You can easily check quota information for a project:
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+quotas = project.quotas
+
+print(f"CPU cores quota: {quotas.cores}")
+print(f"RAM quota: {quotas.ram} MB")
+```
+
+## Query a Server
+
+Servers (virtual machines) can be queried by ID or name:
+
+<CodeGroup>
+```python By ID
+from myos.server import Server
+
+# Query server by ID
+server = Server(server_id='79b3b46d-c7d8-47d2-a59d-ce5ded79b63b')
+
+print(f"Server Name: {server.name}")
+print(f"Status: {server.status}")
+```
+
+```python By Name
+from myos.server import Server
+
+# Query server by name
+server = Server(name='vwn-gpu-2025-12-05-21-03-17-0')
+
+print(f"Server ID: {server.id}")
+print(f"Status: {server.status}")
+```
+</CodeGroup>
+
+### Get Server Details
+
+Access detailed information about a server and its related resources:
+
+```python
+from myos.server import Server
+
+server = Server(server_id='79b3b46d-c7d8-47d2-a59d-ce5ded79b63b')
+
+# Basic information
+print(f"Name: {server.name}")
+print(f"Status: {server.status}")
+
+# Owner information
+print(f"\nOwner: {server.user.name}")
+print(f"Owner Email: {server.user.email}")
+
+# Resource details
+print(f"\nImage: {server.image.name}")
+print(f"Flavor: {server.flavor.name}")
+print(f"  - CPUs: {server.flavor.cpu}")
+print(f"  - RAM: {server.flavor.ram} MB")
+print(f"  - Disk: {server.flavor.disk} GB")
+
+# Hypervisor location
+print(f"\nHypervisor: {server.hypervisor.hostname}")
+```
+
+<Warning>
+  Some properties like `flavor.cpu`, `flavor.ram`, etc., require accessing additional data from OpenStack and may take longer to retrieve.
+</Warning>
+
+## Working with Cloud Resources
+
+The `Cloud` class provides access to cloud-wide resources:
+
+```python
+from myos.cloud import Cloud
+
+# Initialize cloud connection (uses 'admin' from clouds.yaml)
+cloud = Cloud("admin")
+
+# Get all hypervisors
+hypervisors = cloud.hypervisors
+print(f"Total hypervisors: {len(hypervisors)}")
+print(f"First hypervisor: {hypervisors[0].hostname}")
+
+# Get all projects
+projects = cloud.projects
+print(f"\nTotal projects: {len(projects)}")
+
+# Get all flavors
+flavors = cloud.flavors
+print(f"\nTotal flavors: {len(flavors)}")
+
+# Get all images
+images = cloud.images
+print(f"\nTotal images: {len(images)}")
+
+# Get all floating IPs
+fips = cloud.fips
+print(f"\nTotal floating IPs: {len(fips)}")
+```
+
+## Complete Example
+
+Here's a complete example that ties everything together:
+
+```python example.py
+from myos.cloud import Cloud
+from myos.project import Project
+from myos.user import User
+
+# Initialize cloud connection
+cloud = Cloud("admin")
+
+# Get a specific project
+project = Project(name='Condor')
+print(f"Project: {project.name} ({project.id})")
+
+# Show project quotas
+quotas = project.quotas
+print(f"\nQuotas:")
+print(f"  Cores: {quotas.cores}")
+print(f"  RAM: {quotas.ram} MB")
+
+# List all servers in the project
+servers = project.servers
+print(f"\nServers ({len(servers)} total):")
+for server in servers[:5]:  # Show first 5
+    print(f"  - {server.name}")
+    print(f"    Status: {server.status}")
+    print(f"    Owner: {server.user.email}")
+    print(f"    Flavor: {server.flavor.name}")
+    print()
+
+# List users with access
+users = project.users
+print(f"Users with access ({len(users)} total):")
+for user in users[:10]:  # Show first 10
+    print(f"  - {user.name}")
+```
+
+## Using Different Cloud Profiles
+
+If you have multiple cloud configurations in your `clouds.yaml`, you can specify which one to use:
+
+```python
+from myos.cloud import Cloud
+from myos.hypervisor import Hypervisor
+
+# Use development cloud
+dev_cloud = Cloud("admin-dev")
+
+# Query resources in dev cloud
+hv = Hypervisor(name="hv400.matrix.net", cloud=dev_cloud)
+servers = hv.servers
+
+print(f"Servers on {hv.hostname} in dev cloud: {len(servers)}")
+```
+
+<Tip>
+  Pass the `cloud` parameter to any resource class (User, Project, Server, etc.) to use a specific cloud profile.
+</Tip>
+
+## Next Steps
+
+Now that you understand the basics, explore these resources:
+
+- Learn about [Managing Users](/guides/managing-users) - Query and manage OpenStack users
+- Learn about [Managing Projects](/guides/managing-projects) - Manage projects and their resources
+- Learn about [Managing Servers](/guides/managing-servers) - Work with virtual machines
+- Learn about [Cloud Resources](/concepts/cloud) - Access hypervisors, flavors, and images
+
+## Common Patterns
+
+### Find all servers owned by a user
+
+```python
+from myos.user import User
+
+user = User(name='wup22514', domain_name='stfc')
+servers = user.servers
+
+for server in servers:
+    print(f"{server.name} - {server.status}")
+```
+
+### Find all servers on a hypervisor
+
+```python
+from myos.hypervisor import Hypervisor
+
+hv = Hypervisor(name='hv1.matrix.net')
+servers = hv.servers
+
+for server in servers:
+    print(f"{server.name} owned by {server.user.email}")
+```
+
+### Check resource usage across all projects
+
+```python
+from myos.cloud import Cloud
+
+cloud = Cloud("admin")
+projects = cloud.projects
+
+total_servers = 0
+for project in projects:
+    server_count = len(project.servers)
+    total_servers += server_count
+    if server_count > 0:
+        print(f"{project.name}: {server_count} servers")
+
+print(f"\nTotal servers across all projects: {total_servers}")
+```

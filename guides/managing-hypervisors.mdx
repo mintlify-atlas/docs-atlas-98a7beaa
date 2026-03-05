@@ -1,0 +1,379 @@
+---
+title: Managing Hypervisors
+description: Learn how to query and monitor OpenStack hypervisors with the myos SDK
+---
+
+## Overview
+
+The `Hypervisor` class provides an interface for working with OpenStack compute hosts (hypervisors). Hypervisors are the physical or virtual machines that run your cloud instances. This guide shows you how to query hypervisor information and monitor the servers running on them.
+
+## Creating a Hypervisor Instance
+
+<Steps>
+  <Step title="Initialize by hostname">
+    Create a hypervisor instance using the hostname:
+
+    ```python
+    from myos.hypervisor import Hypervisor
+
+    hypervisor = Hypervisor(name="hv-a100x8-8.nubes.rl.ac.uk")
+    ```
+  </Step>
+
+  <Step title="Initialize by ID">
+    Alternatively, create a hypervisor instance using the hypervisor ID:
+
+    ```python
+    hypervisor = Hypervisor(hypervisor_id="42")
+    ```
+  </Step>
+
+  <Step title="Specify cloud configuration">
+    Optionally specify a custom cloud configuration:
+
+    ```python
+    from myos.cloud import Cloud
+
+    cloud = Cloud(cloud="admin")
+    hypervisor = Hypervisor(name="hv300.nubes.rl.ac.uk", cloud=cloud)
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+  Hypervisor operations typically require administrator privileges in OpenStack.
+</Warning>
+
+## Querying Hypervisor Properties
+
+### Basic Properties
+
+Access core hypervisor information:
+
+```python
+from myos.hypervisor import Hypervisor
+
+hypervisor = Hypervisor(name="hv300.nubes.rl.ac.uk")
+
+# Get hypervisor details
+print(hypervisor.hostname)  # Hypervisor hostname
+print(hypervisor.name)      # Same as hostname
+print(hypervisor.id)        # Hypervisor ID
+```
+
+<Note>
+  The `name` and `hostname` properties are equivalent for the `Hypervisor` class.
+</Note>
+
+### Status and State
+
+Check the operational status of a hypervisor:
+
+```python
+hypervisor = Hypervisor(name="hv-a100x8-8.nubes.rl.ac.uk")
+
+print(f"Status: {hypervisor.status}")
+print(f"State: {hypervisor.state}")
+```
+
+<Accordion title="Status and State Values">
+  **Status** indicates whether the hypervisor is enabled:
+  - `enabled`: Hypervisor is active and can host VMs
+  - `disabled`: Hypervisor is disabled
+
+  **State** indicates the hypervisor's current operational state:
+  - `up`: Hypervisor is running normally
+  - `down`: Hypervisor is not responding
+</Accordion>
+
+<Info>
+  Always check both `status` and `state` to get a complete picture of hypervisor health.
+</Info>
+
+## Managing Servers on Hypervisors
+
+### Listing All Servers
+
+Retrieve all servers running on a specific hypervisor:
+
+```python
+from myos.hypervisor import Hypervisor
+
+hypervisor = Hypervisor(name="hv-a100x8-8.nubes.rl.ac.uk")
+
+# Get all servers on this hypervisor
+servers = hypervisor.servers
+
+print(f"Hypervisor {hypervisor.hostname} hosts {len(servers)} servers\n")
+
+for server in servers:
+    print(f"Server: {server.name}")
+    print(f"  ID: {server.id}")
+    print(f"  Status: {server.status}")
+    print(f"  Flavor: {server.flavor.name}")
+    print()
+```
+
+<Accordion title="Example Output">
+  ```
+  Hypervisor hv-a100x8-8.nubes.rl.ac.uk hosts 3 servers
+
+  Server: vwn-gpu-2025-12-05-21-03-17-0
+    ID: 79b3b46d-c7d8-47d2-a59d-ce5ded79b63b
+    Status: ACTIVE
+    Flavor: g-a100-80gb-2022.x1
+
+  Server: vwn-gpu-2025-12-17-13-17-19-0
+    ID: 4027da2e-c42b-411b-88f7-cc41f431959a
+    Status: ACTIVE
+    Flavor: g-a100-80gb-2022.x1
+  ```
+</Accordion>
+
+<Tip>
+  The `servers` property searches across all projects, making it useful for monitoring hypervisor workload.
+</Tip>
+
+## Relationship Traversal
+
+### From Hypervisor to Servers to Users
+
+Traverse relationships to understand who is using resources on a hypervisor:
+
+```python
+from myos.hypervisor import Hypervisor
+
+hypervisor = Hypervisor(name="hv-a100x8-8.nubes.rl.ac.uk")
+
+print(f"Analyzing hypervisor: {hypervisor.hostname}\n")
+print(f"Status: {hypervisor.status}, State: {hypervisor.state}\n")
+
+# Get all servers and their creators
+servers = hypervisor.servers
+print(f"Total servers: {len(servers)}\n")
+
+user_server_count = {}
+
+for server in servers:
+    print(f"Server: {server.name}")
+    print(f"  Status: {server.status}")
+    print(f"  Image: {server.image.name}")
+    
+    # Get the user who created this server
+    user = server.user
+    print(f"  Created by: {user.name}")
+    print(f"  User domain: {user.domain.name}")
+    
+    # Track servers per user
+    if user.name not in user_server_count:
+        user_server_count[user.name] = 0
+    user_server_count[user.name] += 1
+    print()
+
+# Summary
+print("User Summary:")
+for username, count in user_server_count.items():
+    print(f"  {username}: {count} server(s)")
+```
+
+### From Server to Hypervisor
+
+Find which hypervisor is running a specific server:
+
+```python
+from myos.server import Server
+
+server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+
+# Get the hypervisor running this server
+hypervisor = server.hypervisor
+
+print(f"Server {server.name} is running on:")
+print(f"  Hypervisor: {hypervisor.hostname}")
+print(f"  HV Status: {hypervisor.status}")
+print(f"  HV State: {hypervisor.state}")
+
+# Get other servers on the same hypervisor
+sibling_servers = hypervisor.servers
+print(f"\nOther servers on this hypervisor ({len(sibling_servers) - 1}):")
+
+for srv in sibling_servers:
+    if srv.id != server.id:
+        print(f"  - {srv.name} ({srv.status})")
+```
+
+<Info>
+  This pattern is useful for understanding resource colocation and planning migrations.
+</Info>
+
+## Capacity Planning Example
+
+Monitor hypervisor utilization for capacity planning:
+
+```python
+from myos.hypervisor import Hypervisor
+
+hypervisor = Hypervisor(name="hv-a100x8-8.nubes.rl.ac.uk")
+
+print("=" * 60)
+print(f"Hypervisor Capacity Report: {hypervisor.hostname}")
+print("=" * 60)
+
+# Health check
+print(f"\nHealth Status:")
+print(f"  Status: {hypervisor.status}")
+print(f"  State: {hypervisor.state}")
+
+# Get all servers
+servers = hypervisor.servers
+
+print(f"\nWorkload Summary:")
+print(f"  Total Servers: {len(servers)}")
+
+# Count servers by status
+status_counts = {}
+for server in servers:
+    status = server.status
+    if status not in status_counts:
+        status_counts[status] = 0
+    status_counts[status] += 1
+
+for status, count in sorted(status_counts.items()):
+    print(f"    {status}: {count}")
+
+# Analyze flavors in use
+print(f"\nFlavor Distribution:")
+flavor_counts = {}
+
+for server in servers:
+    flavor_name = server.flavor.name
+    if flavor_name not in flavor_counts:
+        flavor_counts[flavor_name] = 0
+    flavor_counts[flavor_name] += 1
+
+for flavor, count in sorted(flavor_counts.items(), key=lambda x: x[1], reverse=True):
+    print(f"  {flavor}: {count} server(s)")
+
+# List active servers
+active_servers = [s for s in servers if s.status == "ACTIVE"]
+
+print(f"\nActive Servers ({len(active_servers)}):")
+for server in active_servers[:10]:  # Show first 10
+    user = server.user
+    print(f"  - {server.name}")
+    print(f"    Owner: {user.name} ({user.domain.name})")
+    print(f"    Flavor: {server.flavor.name}")
+
+print("\n" + "=" * 60)
+```
+
+## Multi-Hypervisor Analysis
+
+Compare workloads across multiple hypervisors:
+
+```python
+from myos.hypervisor import Hypervisor
+
+hypervisor_names = [
+    "hv300.nubes.rl.ac.uk",
+    "hv-a100x8-8.nubes.rl.ac.uk",
+]
+
+print("Multi-Hypervisor Workload Report\n")
+print(f"{'Hypervisor':<40} {'Status':<10} {'State':<10} {'Servers':<10}")
+print("=" * 70)
+
+total_servers = 0
+
+for hv_name in hypervisor_names:
+    hv = Hypervisor(name=hv_name)
+    server_count = len(hv.servers)
+    total_servers += server_count
+    
+    print(f"{hv.hostname:<40} {hv.status:<10} {hv.state:<10} {server_count:<10}")
+
+print("=" * 70)
+print(f"{'Total':<40} {'':<10} {'':<10} {total_servers:<10}")
+```
+
+<Warning>
+  Querying multiple hypervisors and their servers can be slow. Consider caching results for dashboards.
+</Warning>
+
+## Complete Example
+
+Here's a comprehensive example for hypervisor monitoring:
+
+```python
+from myos.hypervisor import Hypervisor
+from myos.cloud import Cloud
+
+# Initialize with admin cloud
+admin_cloud = Cloud(cloud="admin")
+hypervisor = Hypervisor(name="hv-a100x8-8.nubes.rl.ac.uk", cloud=admin_cloud)
+
+print("=" * 60)
+print(f"Hypervisor Details: {hypervisor.hostname}")
+print("=" * 60)
+
+# Basic information
+print(f"\nIdentification:")
+print(f"  ID: {hypervisor.id}")
+print(f"  Hostname: {hypervisor.hostname}")
+
+# Health status
+print(f"\nHealth:")
+print(f"  Status: {hypervisor.status}")
+print(f"  State: {hypervisor.state}")
+
+if hypervisor.status == "enabled" and hypervisor.state == "up":
+    print("  ✓ Hypervisor is healthy")
+else:
+    print("  ⚠ Hypervisor requires attention")
+
+# Workload analysis
+servers = hypervisor.servers
+print(f"\nWorkload:")
+print(f"  Total Servers: {len(servers)}")
+
+active_count = len([s for s in servers if s.status == "ACTIVE"])
+print(f"  Active Servers: {active_count}")
+
+# Detailed server list
+if servers:
+    print(f"\nServer Details:")
+    for server in servers[:5]:  # First 5 servers
+        print(f"\n  {server.name}:")
+        print(f"    Status: {server.status}")
+        print(f"    Flavor: {server.flavor.name}")
+        print(f"    Image: {server.image.name}")
+        print(f"    Owner: {server.user.name}")
+
+print("\n" + "=" * 60)
+```
+
+## Cloud Configuration
+
+Hypervisor operations typically require admin credentials:
+
+```python
+from myos.hypervisor import Hypervisor
+from myos.cloud import Cloud
+
+# Use default cloud (may require admin)
+hypervisor = Hypervisor(name="hv300.nubes.rl.ac.uk")
+
+# Use specific admin cloud configuration
+admin_cloud = Cloud(cloud="admin")
+hypervisor = Hypervisor(name="hv300.nubes.rl.ac.uk", cloud=admin_cloud)
+```
+
+<Note>
+  Ensure your cloud configuration has sufficient privileges to query hypervisor information.
+</Note>
+
+## Related Resources
+
+- [Managing Servers](/guides/managing-servers) - Work with virtual machines
+- [Managing Users](/guides/managing-users) - User management
+- [Managing Projects](/guides/managing-projects) - Project management

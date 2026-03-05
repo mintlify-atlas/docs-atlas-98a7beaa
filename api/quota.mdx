@@ -1,0 +1,230 @@
+---
+title: 'Quota'
+description: 'API reference for the Quota class'
+---
+
+## Quota
+
+The `Quota` class provides an interface to access OpenStack project quotas, allowing you to retrieve limit values for various resources such as cores, instances, RAM, volumes, and network resources.
+
+### Constructor
+
+```python
+Quota(data)
+```
+
+Initialize a Quota instance.
+
+<ParamField path="data" type="list" required>
+  A list of quota resources with their limits. Each item in the list should be a dictionary with `Resource` and `Limit` keys.
+  
+  Example format:
+  ```python
+  [
+    {"Resource": "cores", "Limit": 10},
+    {"Resource": "instances", "Limit": 10},
+    {"Resource": "ram", "Limit": 51200}
+  ]
+  ```
+</ParamField>
+
+### Properties
+
+#### Compute Quotas
+
+<ResponseField name="cores" type="int">
+  Returns the quota limit for CPU cores.
+</ResponseField>
+
+<ResponseField name="instances" type="int">
+  Returns the quota limit for instances.
+</ResponseField>
+
+<ResponseField name="ram" type="int">
+  Returns the quota limit for RAM (in MB).
+</ResponseField>
+
+<ResponseField name="key_pairs" type="int">
+  Returns the quota limit for key pairs.
+</ResponseField>
+
+<ResponseField name="server_groups" type="int">
+  Returns the quota limit for server groups.
+</ResponseField>
+
+<ResponseField name="server_group_members" type="int">
+  Returns the quota limit for server group members.
+</ResponseField>
+
+<ResponseField name="injected_files" type="int">
+  Returns the quota limit for injected files.
+</ResponseField>
+
+<ResponseField name="injected_file_size" type="int">
+  Returns the quota limit for injected file size.
+</ResponseField>
+
+<ResponseField name="injected_path_size" type="int">
+  Returns the quota limit for injected path size.
+</ResponseField>
+
+#### Storage Quotas
+
+<ResponseField name="volumes" type="int">
+  Returns the quota limit for volumes.
+</ResponseField>
+
+<ResponseField name="snapshots" type="int">
+  Returns the quota limit for snapshots.
+</ResponseField>
+
+<ResponseField name="gigabytes" type="int">
+  Returns the quota limit for gigabytes.
+</ResponseField>
+
+<ResponseField name="backups" type="int">
+  Returns the quota limit for backups.
+</ResponseField>
+
+<ResponseField name="backup_gigabytes" type="int">
+  Returns the quota limit for backup gigabytes.
+</ResponseField>
+
+<ResponseField name="per_volume_gigabytes" type="int">
+  Returns the quota limit for per-volume gigabytes.
+</ResponseField>
+
+<ResponseField name="volumes___DEFAULT__" type="int">
+  Returns the default volume type quota limit for volumes.
+</ResponseField>
+
+<ResponseField name="gigabytes___DEFAULT__" type="int">
+  Returns the default volume type quota limit for gigabytes.
+</ResponseField>
+
+<ResponseField name="snapshots___DEFAULT__" type="int">
+  Returns the default volume type quota limit for snapshots.
+</ResponseField>
+
+<ResponseField name="volumes_rbd" type="int">
+  Returns the RBD volume type quota limit for volumes.
+</ResponseField>
+
+<ResponseField name="gigabytes_rbd" type="int">
+  Returns the RBD volume type quota limit for gigabytes.
+</ResponseField>
+
+<ResponseField name="snapshots_rbd" type="int">
+  Returns the RBD volume type quota limit for snapshots.
+</ResponseField>
+
+<ResponseField name="groups" type="int">
+  Returns the quota limit for volume groups.
+</ResponseField>
+
+#### Network Quotas
+
+<ResponseField name="networks" type="int">
+  Returns the quota limit for networks.
+</ResponseField>
+
+<ResponseField name="subnets" type="int">
+  Returns the quota limit for subnets.
+</ResponseField>
+
+<ResponseField name="subnet_pools" type="int">
+  Returns the quota limit for subnet pools.
+</ResponseField>
+
+<ResponseField name="ports" type="int">
+  Returns the quota limit for ports.
+</ResponseField>
+
+<ResponseField name="routers" type="int">
+  Returns the quota limit for routers.
+</ResponseField>
+
+<ResponseField name="fixed_ips" type="int">
+  Returns the quota limit for fixed IPs.
+</ResponseField>
+
+<ResponseField name="floating_ips" type="int">
+  Returns the quota limit for floating IPs.
+</ResponseField>
+
+<ResponseField name="secgroups" type="int">
+  Returns the quota limit for security groups.
+</ResponseField>
+
+<ResponseField name="secgroup_rules" type="int">
+  Returns the quota limit for security group rules.
+</ResponseField>
+
+<ResponseField name="rbac_policies" type="int">
+  Returns the quota limit for RBAC policies.
+</ResponseField>
+
+#### Load Balancer Quotas
+
+<ResponseField name="load_balancers" type="int">
+  Returns the quota limit for load balancers.
+</ResponseField>
+
+<ResponseField name="listeners" type="int">
+  Returns the quota limit for load balancer listeners.
+</ResponseField>
+
+<ResponseField name="pools" type="int">
+  Returns the quota limit for load balancer pools.
+</ResponseField>
+
+<ResponseField name="health_monitors" type="int">
+  Returns the quota limit for health monitors.
+</ResponseField>
+
+<ResponseField name="l7_policies" type="int">
+  Returns the quota limit for L7 policies.
+</ResponseField>
+
+#### Other Properties
+
+<ResponseField name="project_id" type="str">
+  Returns the project ID associated with these quotas.
+</ResponseField>
+
+<ResponseField name="properties" type="int">
+  Returns the quota limit for properties.
+</ResponseField>
+
+<ResponseField name="check_limit" type="int">
+  Returns the check limit value.
+</ResponseField>
+
+### Usage Example
+
+```python
+from myos.quota import Quota
+
+# Initialize quota with data
+quota_data = [
+    {"Resource": "cores", "Limit": 10},
+    {"Resource": "instances", "Limit": 10},
+    {"Resource": "ram", "Limit": 51200},
+    {"Resource": "volumes", "Limit": 20},
+    {"Resource": "floating-ips", "Limit": 5}
+]
+
+quota = Quota(data=quota_data)
+
+# Access quota properties
+print(quota.cores)        # Get cores limit
+print(quota.instances)    # Get instances limit
+print(quota.ram)          # Get RAM limit in MB
+print(quota.volumes)      # Get volumes limit
+print(quota.floating_ips) # Get floating IPs limit
+
+# Check network quotas
+print(quota.networks)     # Get networks limit
+print(quota.ports)        # Get ports limit
+print(quota.routers)      # Get routers limit
+```

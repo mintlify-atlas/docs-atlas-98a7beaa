@@ -1,0 +1,346 @@
+---
+title: Managing Servers
+description: Learn how to query and manage OpenStack virtual machines with the myos SDK
+---
+
+## Overview
+
+The `Server` class provides an interface for working with OpenStack virtual machine instances. You can query server details, access their configurations, and traverse relationships to users, hypervisors, and projects.
+
+## Creating a Server Instance
+
+<Steps>
+  <Step title="Initialize by ID">
+    Create a server instance using the server ID:
+
+    ```python
+    from myos.server import Server
+
+    server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+    ```
+  </Step>
+
+  <Step title="Initialize by name">
+    Alternatively, create a server instance using the server name:
+
+    ```python
+    server = Server(name="vwn-gpu-2025-12-05-21-03-17-0")
+    ```
+  </Step>
+
+  <Step title="Specify cloud configuration">
+    Optionally specify a custom cloud configuration:
+
+    ```python
+    from myos.cloud import Cloud
+
+    cloud = Cloud(cloud="production")
+    server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b", cloud=cloud)
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  The SDK uses lazy loading - server data is only fetched from OpenStack when you access a property.
+</Note>
+
+## Querying Server Properties
+
+### Basic Properties
+
+Access core server information:
+
+```python
+from myos.server import Server
+
+server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+
+# Get server details
+print(server.name)    # Server name
+print(server.id)      # Server ID
+print(server.status)  # Current status (e.g., ACTIVE, SHUTOFF)
+```
+
+<Accordion title="Common Server Statuses">
+  - **ACTIVE**: Server is running
+  - **SHUTOFF**: Server is powered off
+  - **BUILD**: Server is being created
+  - **ERROR**: Server encountered an error
+  - **PAUSED**: Server is paused
+  - **SUSPENDED**: Server is suspended
+</Accordion>
+
+### Flavor Information
+
+Get the flavor (size/type) of the server:
+
+```python
+server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+
+# Access server's flavor
+flavor = server.flavor
+print(f"Flavor Name: {flavor.name}")
+print(f"Flavor ID: {flavor.id}")
+```
+
+<Info>
+  The `flavor` property returns a `Flavor` object, allowing you to access detailed flavor specifications like CPU, RAM, and disk.
+</Info>
+
+### Image Information
+
+Retrieve the image used to create the server:
+
+```python
+server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+
+# Access server's image
+image = server.image
+print(f"Image Name: {image.name}")
+print(f"Image ID: {image.id}")
+```
+
+<Accordion title="Example Output">
+  ```
+  Image Name: rocky-8-aqml
+  Image ID: a3f2b8c1-5d4e-4a6b-9c7d-2e1f0a3b5c8d
+  ```
+</Accordion>
+
+## Relationship Traversal
+
+### Accessing the Server Creator
+
+Find out who created the server:
+
+```python
+server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+
+# Get the user who created this server
+user = server.user
+print(f"Created by: {user.name}")
+print(f"User ID: {user.id}")
+print(f"User Email: {user.email}")
+print(f"User Domain: {user.domain.name}")
+```
+
+<Info>
+  The `user` property returns a `User` object, enabling full access to the creator's information and related resources.
+</Info>
+
+### Accessing the Hypervisor
+
+Determine which physical host is running the server:
+
+```python
+server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+
+# Get the hypervisor running this server
+hypervisor = server.hypervisor
+print(f"Hypervisor: {hypervisor.hostname}")
+print(f"Status: {hypervisor.status}")
+print(f"State: {hypervisor.state}")
+```
+
+<Accordion title="Example Output">
+  ```
+  Hypervisor: hv-a100x8-8.nubes.rl.ac.uk
+  Status: enabled
+  State: up
+  ```
+</Accordion>
+
+<Tip>
+  Knowing the hypervisor is useful for troubleshooting, capacity planning, and understanding the physical infrastructure.
+</Tip>
+
+## Multi-Level Relationship Traversal
+
+The myos SDK supports deep relationship traversal across multiple resource types:
+
+```python
+from myos.server import Server
+
+server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+
+print(f"Server: {server.name}\n")
+
+# Traverse to user and their other resources
+user = server.user
+print(f"Created by: {user.name}")
+print(f"User's domain: {user.domain.name}\n")
+
+# Get all projects the creator has access to
+user_projects = user.projects
+print(f"Creator has access to {len(user_projects)} projects:")
+for project in user_projects:
+    print(f"  - {project.name}")
+
+print()
+
+# Traverse to hypervisor and other servers on it
+hypervisor = server.hypervisor
+print(f"Running on hypervisor: {hypervisor.hostname}")
+
+other_servers = hypervisor.servers
+print(f"This hypervisor hosts {len(other_servers)} total servers:")
+for srv in other_servers[:5]:  # Show first 5
+    print(f"  - {srv.name} ({srv.status})")
+```
+
+<Warning>
+  Deep traversal operations can be slow as they make multiple API calls. Consider caching results when possible.
+</Warning>
+
+## Querying Servers from Other Resources
+
+### Servers by User
+
+Find all servers created by a specific user:
+
+```python
+from myos.user import User
+
+user = User(name="wup22514", domain_name="stfc")
+
+# Get all servers created by this user
+servers = user.servers
+
+print(f"User has created {len(servers)} servers:\n")
+
+for server in servers:
+    print(f"Server: {server.name}")
+    print(f"  ID: {server.id}")
+    print(f"  Status: {server.status}")
+    print(f"  Flavor: {server.flavor.name}")
+    print(f"  Image: {server.image.name}")
+    print(f"  Hypervisor: {server.hypervisor.hostname}")
+    print()
+```
+
+### Servers by Project
+
+Find all servers in a specific project:
+
+```python
+from myos.project import Project
+
+project = Project(name="Condor")
+
+# Get all servers in this project
+servers = project.servers
+
+print(f"Project has {len(servers)} servers:\n")
+
+for server in servers:
+    print(f"{server.name}:")
+    print(f"  Status: {server.status}")
+    print(f"  Creator: {server.user.name}")
+    print()
+```
+
+### Servers by Hypervisor
+
+Find all servers running on a specific hypervisor:
+
+```python
+from myos.hypervisor import Hypervisor
+
+hypervisor = Hypervisor(name="hv-a100x8-8.nubes.rl.ac.uk")
+
+# Get all servers on this hypervisor
+servers = hypervisor.servers
+
+print(f"Hypervisor hosts {len(servers)} servers:\n")
+
+for server in servers:
+    print(f"Server: {server.name}")
+    print(f"  Status: {server.status}")
+    print(f"  Flavor: {server.flavor.name}")
+    print()
+```
+
+<Info>
+  This is useful for capacity planning and understanding hypervisor workload distribution.
+</Info>
+
+## Complete Example
+
+Here's a comprehensive example showing server management:
+
+```python
+from myos.server import Server
+from myos.cloud import Cloud
+
+# Initialize server
+cloud = Cloud()
+server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b", cloud=cloud)
+
+print("=" * 60)
+print(f"Server Information: {server.name}")
+print("=" * 60)
+
+# Basic information
+print(f"\nBasic Details:")
+print(f"  ID: {server.id}")
+print(f"  Status: {server.status}")
+
+# Configuration details
+flavor = server.flavor
+image = server.image
+
+print(f"\nConfiguration:")
+print(f"  Flavor: {flavor.name}")
+print(f"  Image: {image.name}")
+
+# Creator information
+user = server.user
+
+print(f"\nCreator:")
+print(f"  Name: {user.name}")
+print(f"  Email: {user.email}")
+print(f"  Domain: {user.domain.name}")
+
+# Infrastructure details
+hypervisor = server.hypervisor
+
+print(f"\nInfrastructure:")
+print(f"  Hypervisor: {hypervisor.hostname}")
+print(f"  HV Status: {hypervisor.status}")
+print(f"  HV State: {hypervisor.state}")
+
+# Related resources
+print(f"\nRelated Resources:")
+print(f"  Servers by same creator: {len(user.servers)}")
+print(f"  Projects accessible to creator: {len(user.projects)}")
+print(f"  Servers on same hypervisor: {len(hypervisor.servers)}")
+
+print("\n" + "=" * 60)
+```
+
+## Cloud Configuration
+
+All server operations require authentication:
+
+```python
+from myos.server import Server
+from myos.cloud import Cloud
+
+# Use default cloud
+server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+
+# Use specific cloud configuration
+custom_cloud = Cloud(cloud="production")
+server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b", cloud=custom_cloud)
+```
+
+<Note>
+  The SDK uses OpenStack CLI commands with `--os-cloud` configuration for authentication.
+</Note>
+
+## Related Resources
+
+- [Managing Users](/guides/managing-users) - Work with OpenStack users
+- [Managing Projects](/guides/managing-projects) - Manage projects
+- [Managing Hypervisors](/guides/managing-hypervisors) - Work with hypervisors
+- [Working with Domains](/guides/working-with-domains) - Domain management

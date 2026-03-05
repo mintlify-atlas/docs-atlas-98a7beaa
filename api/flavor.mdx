@@ -1,0 +1,116 @@
+---
+title: 'Flavor'
+description: 'API reference for the Flavor class'
+---
+
+## Flavor
+
+The `Flavor` class provides an interface to interact with OpenStack flavors, allowing you to retrieve information about compute resource templates including CPU, RAM, and disk configurations.
+
+### Constructor
+
+```python
+Flavor(flavor_id=None, name=None, cloud=Cloud())
+```
+
+Initialize a Flavor instance.
+
+<ParamField path="flavor_id" type="str" optional>
+  The unique identifier of the flavor. Either `flavor_id` or `name` should be provided.
+</ParamField>
+
+<ParamField path="name" type="str" optional>
+  The name of the flavor. Either `flavor_id` or `name` should be provided.
+</ParamField>
+
+<ParamField path="cloud" type="Cloud" default="Cloud()">
+  The Cloud instance to use for OpenStack operations. Defaults to a new Cloud instance.
+</ParamField>
+
+### Properties
+
+#### name
+
+```python
+@property
+def name(self) -> str
+```
+
+<ResponseField name="name" type="str">
+  Returns the name associated to this Flavor.
+</ResponseField>
+
+#### id
+
+```python
+@property
+def id(self) -> str
+```
+
+<ResponseField name="id" type="str">
+  Returns the flavor_id associated to this Flavor.
+</ResponseField>
+
+#### disk
+
+```python
+@property
+def disk(self) -> int
+```
+
+<ResponseField name="disk" type="int">
+  Returns the Disk associated to this Flavor (in GB).
+</ResponseField>
+
+#### ram
+
+```python
+@property
+def ram(self) -> int
+```
+
+<ResponseField name="ram" type="int">
+  Returns the RAM associated to this Flavor (in MB).
+</ResponseField>
+
+#### cpu
+
+```python
+@property
+def cpu(self) -> int
+```
+
+<ResponseField name="cpu" type="int">
+  Returns the vcpu associated to this Flavor.
+</ResponseField>
+
+#### servers
+
+```python
+@property
+def servers(self) -> EntityList
+```
+
+<ResponseField name="servers" type="EntityList">
+  Returns all Servers using this Flavor.
+</ResponseField>
+
+### Usage Example
+
+```python
+from myos.flavor import Flavor
+
+# Initialize flavor by name
+flavor = Flavor(name="l3.micro")
+
+# Access flavor properties
+print(flavor.name)  # Get flavor name
+print(flavor.id)    # Get flavor ID
+print(flavor.disk)  # Get disk size (GB)
+print(flavor.ram)   # Get RAM size (MB)
+print(flavor.cpu)   # Get vCPU count
+
+# List servers using this flavor
+for server in flavor.servers:
+    print(server.id)
+```

@@ -1,0 +1,203 @@
+---
+title: Cloud Class
+description: Understanding the Cloud class and how it provides access to OpenStack resources
+---
+
+The `Cloud` class is the main entry point for interacting with your OpenStack infrastructure using myos. It provides a unified interface to access all OpenStack resources including hypervisors, flavors, images, projects, and floating IPs.
+
+## Overview
+
+The `Cloud` class acts as a gateway to your OpenStack cloud, wrapping OpenStack CLI commands and returning resource objects that you can work with programmatically.
+
+### Key Features
+
+- **Unified Access**: Single interface to access all OpenStack resources
+- **Lazy Loading**: Resources are loaded on-demand when you access properties
+- **EntityList Support**: All resource collections return `EntityList` objects with built-in filtering, sorting, and mapping
+- **Cloud Context**: Automatically passes cloud authentication to all resource objects
+
+## Basic Usage
+
+### Creating a Cloud Instance
+
+<CodeGroup>
+
+```python Default Cloud
+from myos.cloud import Cloud
+
+# Connect to the default 'admin' cloud
+cloud = Cloud()
+```
+
+```python Named Cloud
+from myos.cloud import Cloud
+
+# Connect to a specific cloud configuration
+cloud = Cloud(cloud="production")
+```
+
+</CodeGroup>
+
+<Note>
+The cloud parameter corresponds to the cloud name in your OpenStack CLI configuration (see [Authentication](/concepts/authentication)).
+</Note>
+
+## Accessing Resources
+
+The `Cloud` class provides property-based access to different resource types. Each property returns an `EntityList` containing resource objects.
+
+### Available Resources
+
+#### Hypervisors
+
+Access all hypervisors in your cloud:
+
+```python
+cloud = Cloud("admin")
+hypervisors = cloud.hypervisors
+
+print(f"Total hypervisors: {len(hypervisors)}")
+
+for hv in hypervisors:
+    print(hv.hostname)
+```
+
+#### Flavors
+
+Retrieve all available instance flavors:
+
+```python
+flavors = cloud.flavors
+
+# Find large flavors
+large_flavors = flavors.filter(lambda f: 'large' in f.name.lower())
+```
+
+<Info>
+The `flavors` property fetches all flavors including private ones using the `--all` flag.
+</Info>
+
+#### Images
+
+Get all images available in the cloud:
+
+```python
+images = cloud.images
+
+for image in images:
+    print(f"Image: {image.id}")
+```
+
+#### Projects
+
+Access all projects (tenants):
+
+```python
+projects = cloud.projects
+
+for project in projects:
+    print(f"Project: {project.name} (ID: {project.id})")
+```
+
+#### Floating IPs
+
+Retrieve all floating IP addresses:
+
+```python
+fips = cloud.fips
+
+print(f"Total floating IPs: {len(fips)}")
+
+for fip in fips:
+    print(fip.ip)
+```
+
+## How It Works
+
+The `Cloud` class uses the OpenStack CLI under the hood. When you access a resource property, myos:
+
+1. Constructs an OpenStack CLI command with the appropriate `--os-cloud` parameter
+2. Executes the command and captures JSON output
+3. Parses the JSON and creates resource objects
+4. Returns an `EntityList` containing all resources
+
+### Example Internal Flow
+
+When you call `cloud.hypervisors`, myos executes:
+
+```bash
+openstack --os-cloud admin hypervisor list --format json
+```
+
+The JSON response is parsed and `Hypervisor` objects are created for each entry.
+
+<Warning>
+The `Cloud` class requires the OpenStack CLI to be installed and properly configured. See [Authentication](/concepts/authentication) for setup instructions.
+</Warning>
+
+## Working with EntityLists
+
+All resource properties return `EntityList` objects, which support functional programming patterns:
+
+```python
+from myos.cloud import Cloud
+
+cloud = Cloud("admin")
+
+# Get all hypervisors
+hypervisors = cloud.hypervisors
+
+# Filter by hostname pattern
+filtered = hypervisors.filter(lambda hv: 'gpu' in hv.hostname)
+
+# Sort by hostname
+sorted_hvs = filtered.sort(lambda hv: hv.hostname)
+
+# Map to just hostnames
+hostnames = sorted_hvs.map(lambda hv: hv.hostname)
+```
+
+<Tip>
+`EntityList` objects support chaining, allowing you to combine filter, sort, and map operations elegantly.
+</Tip>
+
+## Complete Example
+
+Here's a complete example that demonstrates accessing multiple resource types:
+
+```python
+from myos.cloud import Cloud
+
+# Initialize cloud connection
+cloud = Cloud("admin")
+
+# Get resource counts
+print("=== Cloud Resources ===")
+print(f"Hypervisors: {len(cloud.hypervisors)}")
+print(f"Flavors: {len(cloud.flavors)}")
+print(f"Images: {len(cloud.images)}")
+print(f"Projects: {len(cloud.projects)}")
+print(f"Floating IPs: {len(cloud.fips)}")
+
+# Work with specific resources
+projects = cloud.projects
+for project in projects:
+    servers = project.servers
+    if len(servers) > 0:
+        print(f"\nProject '{project.name}' has {len(servers)} servers")
+```
+
+## Source Reference
+
+The `Cloud` class implementation can be found in `cloud.py:5-83`. Each resource property follows a consistent pattern:
+
+- Execute OpenStack CLI command with `--os-cloud` parameter
+- Parse JSON response
+- Create resource objects
+- Return `EntityList`
+
+## Next Steps
+
+- Learn about [Authentication](/concepts/authentication) to configure cloud access
+- Explore individual resource classes like `Hypervisor`, `Project`, and `Server`
+- Understand `EntityList` methods for filtering and transforming data

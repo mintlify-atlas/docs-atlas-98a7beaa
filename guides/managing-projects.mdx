@@ -1,0 +1,313 @@
+---
+title: Managing Projects
+description: Learn how to create, query, and manage OpenStack projects with the myos SDK
+---
+
+## Overview
+
+The `Project` class provides an interface for working with OpenStack projects (also known as tenants). Projects are containers for resources like servers, networks, and storage volumes.
+
+## Creating a Project Instance
+
+<Steps>
+  <Step title="Initialize by name">
+    Create a project instance using the project name:
+
+    ```python
+    from myos.project import Project
+
+    project = Project(name="lsst-drp")
+    ```
+  </Step>
+
+  <Step title="Initialize by ID">
+    Alternatively, create a project instance using the project ID:
+
+    ```python
+    project = Project(project_id="5b37be0037c94b69a35e72cb2da8b016")
+    ```
+  </Step>
+
+  <Step title="Specify cloud configuration">
+    Optionally specify a custom cloud configuration:
+
+    ```python
+    from myos.cloud import Cloud
+
+    cloud = Cloud(cloud="production")
+    project = Project(name="lsst-drp", cloud=cloud)
+    ```
+  </Step>
+</Steps>
+
+<Info>
+  Project names with spaces are automatically handled and properly quoted in OpenStack CLI commands.
+</Info>
+
+## Querying Project Properties
+
+### Basic Properties
+
+Access core project information:
+
+```python
+from myos.project import Project
+
+project = Project(name="lsst-drp")
+
+# Get project details
+print(project.name)  # Project name
+print(project.id)    # Project ID
+print(project.tags)  # List of tags
+```
+
+### Parent Project
+
+Projects can have hierarchical relationships:
+
+```python
+project = Project(name="sub-project")
+
+# Get parent project (if exists)
+parent = project.parent
+
+if parent:
+    print(f"Parent project: {parent.name}")
+    print(f"Parent ID: {parent.id}")
+else:
+    print("This is a top-level project")
+```
+
+<Note>
+  The `parent` property returns `None` for top-level projects, or a `Project` object for nested projects.
+</Note>
+
+## Resource Management
+
+### Listing Project Servers
+
+Get all servers running in a project:
+
+```python
+project = Project(name="Condor")
+
+# Get all servers in this project
+servers = project.servers
+
+print(f"Project has {len(servers)} servers")
+
+for server in servers:
+    print(f"Server: {server.name}")
+    print(f"ID: {server.id}")
+    print(f"Status: {server.status}")
+    print(f"Flavor: {server.flavor.name}")
+    print("---")
+```
+
+<Accordion title="Example Output">
+  ```
+  Project has 1 servers
+  Server: vwn-gpu-2025-12-17-07-17-16-0
+  ID: e2951a59-e290-430f-8f12-1fa4168c3024
+  Status: SHUTOFF
+  Flavor: g-a100-80gb-2022.x1
+  ---
+  ```
+</Accordion>
+
+### Listing Project Users
+
+Retrieve all users with access to a project:
+
+```python
+project = Project(name="Condor")
+
+# Get all users with access to this project
+users = project.users
+
+print(f"{len(users)} users have access to this project")
+
+for user in users:
+    print(f"User: {user.name}")
+    # Traverse to user's domain
+    print(f"Domain: {user.domain.name}")
+```
+
+<Info>
+  The `users` property returns users based on role assignments within the project.
+</Info>
+
+### Floating IPs
+
+Get all floating IP addresses allocated to a project:
+
+```python
+project = Project(name="lsst-drp")
+
+# Get all floating IPs in this project
+fips = project.fips
+
+print(f"Project has {len(fips)} floating IPs")
+
+for fip in fips:
+    print(f"Floating IP: {fip.ip}")
+    print(f"ID: {fip.id}")
+```
+
+<Accordion title="Example Output">
+  ```
+  Project has 1 floating IPs
+  Floating IP: 130.246.83.113
+  ID: 3b90998e-ab39-45b4-b56e-120e00d31fdb
+  ```
+</Accordion>
+
+## Quota Management
+
+Check project resource quotas:
+
+```python
+project = Project(name="lsst-drp")
+
+# Get quota information
+quotas = project.quotas
+
+print(f"CPU cores: {quotas.cores}")
+print(f"RAM: {quotas.ram} MB")
+print(f"Instances: {quotas.instances}")
+```
+
+<Warning>
+  Quotas define the maximum resources a project can consume. Monitor these to prevent resource exhaustion.
+</Warning>
+
+## User Management
+
+### Adding Users to Projects
+
+Add a user to a project with the default "user" role:
+
+```python
+from myos.project import Project
+from myos.user import User
+
+project = Project(name="my-project")
+user = User(name="john.doe", domain_name="default")
+
+# Add user to project
+project.add(user)
+```
+
+<Note>
+  The `add()` method automatically assigns the "user" role to the specified user for this project.
+</Note>
+
+### Removing Users from Projects
+
+```python
+from myos.project import Project
+from myos.user import User
+
+project = Project(name="my-project")
+user = User(name="john.doe", domain_name="default")
+
+# Remove user from project
+project.remove(user)
+```
+
+<Warning>
+  User removal functionality is marked for implementation in the source code. Check the latest version for availability.
+</Warning>
+
+## Relationship Traversal
+
+The myos SDK supports rich relationship traversal between resources:
+
+```python
+from myos.project import Project
+
+project = Project(name="ncas-force-U")
+
+# Traverse from project to servers to hypervisors
+print(f"Project: {project.name}\n")
+
+for server in project.servers:
+    print(f"Server: {server.name}")
+    print(f"  Status: {server.status}")
+    print(f"  Flavor: {server.flavor.name}")
+    print(f"  Image: {server.image.name}")
+    
+    # Get the user who created this server
+    creator = server.user
+    print(f"  Created by: {creator.name} ({creator.domain.name})")
+    
+    # Get the hypervisor running this server
+    hypervisor = server.hypervisor
+    print(f"  Hypervisor: {hypervisor.hostname}")
+    print(f"  HV Status: {hypervisor.status}")
+    print()
+
+# Traverse from project to users to their other projects
+print("\nUsers and their other projects:")
+for user in project.users:
+    print(f"User: {user.name}")
+    user_projects = user.projects
+    print(f"  Has access to {len(user_projects)} projects")
+    for proj in user_projects:
+        if proj.name != project.name:
+            print(f"    - {proj.name}")
+```
+
+## Complete Example
+
+Here's a comprehensive example demonstrating project management:
+
+```python
+from myos.project import Project
+from myos.cloud import Cloud
+
+# Initialize project
+cloud = Cloud()
+project = Project(name="lsst-drp", cloud=cloud)
+
+print("=" * 50)
+print(f"Project: {project.name}")
+print(f"ID: {project.id}")
+print(f"Tags: {', '.join(project.tags) if project.tags else 'None'}")
+print("=" * 50)
+
+# Display parent project if exists
+if project.parent:
+    print(f"\nParent Project: {project.parent.name}")
+
+# Resource summary
+servers = project.servers
+users = project.users
+fips = project.fips
+
+print(f"\nResource Summary:")
+print(f"  Servers: {len(servers)}")
+print(f"  Users: {len(users)}")
+print(f"  Floating IPs: {len(fips)}")
+
+# Quota information
+quotas = project.quotas
+print(f"\nQuota Limits:")
+print(f"  Cores: {quotas.cores}")
+print(f"  RAM: {quotas.ram} MB")
+
+# Detailed server information
+if servers:
+    print(f"\nServer Details:")
+    for server in servers[:5]:  # Show first 5 servers
+        print(f"  - {server.name}")
+        print(f"    Status: {server.status}")
+        print(f"    Creator: {server.user.name}")
+        print(f"    Hypervisor: {server.hypervisor.hostname}")
+```
+
+## Related Resources
+
+- [Managing Users](/guides/managing-users) - Work with OpenStack users
+- [Managing Servers](/guides/managing-servers) - Manage virtual machines
+- [Working with Domains](/guides/working-with-domains) - Domain management

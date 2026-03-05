@@ -1,0 +1,161 @@
+---
+title: Installation
+description: Install and configure the myos Python SDK for managing OpenStack cloud infrastructure
+---
+
+## Prerequisites
+
+Before installing myos, ensure you have the following prerequisites:
+
+<Note>
+  **Python Version**: myos requires Python 3.6 or higher
+</Note>
+
+### OpenStack CLI
+
+The myos SDK depends on the OpenStack CLI (`python-openstackclient`) to interact with your OpenStack cloud. You must have this installed and configured before using myos.
+
+<Warning>
+  The OpenStack CLI is a **required dependency**. myos uses the `openstack` command-line tool internally to query and manage cloud resources.
+</Warning>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Install the OpenStack CLI">
+    First, install the OpenStack command-line client:
+
+    ```bash
+    pip install python-openstackclient
+    ```
+
+    Verify the installation:
+
+    ```bash
+    openstack --version
+    ```
+  </Step>
+
+  <Step title="Configure OpenStack Credentials">
+    Create or update your `~/.config/openstack/clouds.yaml` file with your cloud credentials:
+
+    ```yaml clouds.yaml
+    clouds:
+      admin:
+        auth:
+          auth_url: https://your-openstack-url:5000/v3
+          username: admin
+          password: your-password
+          project_name: admin
+          user_domain_name: Default
+          project_domain_name: Default
+        region_name: RegionOne
+    ```
+
+    <Info>
+      The cloud name (e.g., `admin`) will be used when initializing the `Cloud` object in myos.
+    </Info>
+
+    Test your configuration:
+
+    ```bash
+    openstack --os-cloud admin project list
+    ```
+  </Step>
+
+  <Step title="Install myos SDK">
+    Install the myos package using pip:
+
+    ```bash
+    pip install myos
+    ```
+
+    <Tip>
+      For development installations, you can install directly from the source:
+      
+      ```bash
+      git clone https://github.com/your-org/myos.git
+      cd myos
+      pip install -e .
+      ```
+    </Tip>
+  </Step>
+
+  <Step title="Verify Installation">
+    Verify the installation by importing the package in Python:
+
+    ```python
+    python -c "from myos.cloud import Cloud; print('myos installed successfully')"
+    ```
+  </Step>
+</Steps>
+
+## Multiple Cloud Configurations
+
+You can configure multiple clouds in your `clouds.yaml` file for different environments:
+
+```yaml clouds.yaml
+clouds:
+  admin:
+    auth:
+      auth_url: https://prod-openstack:5000/v3
+      username: admin
+      password: prod-password
+      project_name: admin
+      user_domain_name: Default
+      project_domain_name: Default
+    region_name: RegionOne
+  
+  admin-dev:
+    auth:
+      auth_url: https://dev-openstack:5000/v3
+      username: admin
+      password: dev-password
+      project_name: admin
+      user_domain_name: Default
+      project_domain_name: Default
+    region_name: RegionOne
+```
+
+You can then specify which cloud to use when creating myos objects:
+
+```python
+from myos.cloud import Cloud
+
+# Production cloud
+prod_cloud = Cloud("admin")
+
+# Development cloud
+dev_cloud = Cloud("admin-dev")
+```
+
+## Troubleshooting
+
+### OpenStack CLI Not Found
+
+If you see errors about the `openstack` command not being found:
+
+1. Ensure `python-openstackclient` is installed: `pip install python-openstackclient`
+2. Verify it's in your PATH: `which openstack`
+3. Try reinstalling: `pip uninstall python-openstackclient && pip install python-openstackclient`
+
+### Authentication Errors
+
+If you encounter authentication errors:
+
+1. Verify your `clouds.yaml` configuration
+2. Test with the OpenStack CLI directly: `openstack --os-cloud admin token issue`
+3. Check that your credentials are correct and have the necessary permissions
+4. Ensure the `auth_url` is accessible from your network
+
+### Permission Errors
+
+Some operations require administrator privileges. Ensure your OpenStack user has the appropriate roles:
+
+```bash
+openstack --os-cloud admin role assignment list --user <username>
+```
+
+## Next Steps
+
+Now that you have myos installed, continue to the [Quickstart](/quickstart) guide to learn how to use the SDK.

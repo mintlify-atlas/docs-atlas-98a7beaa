@@ -1,0 +1,294 @@
+---
+title: "Server Details"
+description: "Access server properties including flavor, image, user, and hypervisor information"
+---
+
+## Overview
+
+The `Server` class provides comprehensive access to VM instance information, including its configuration, owner, and the hypervisor where it's running.
+
+## Basic Server Lookup
+
+Retrieve server information by ID:
+
+```python
+from myos.server import Server
+
+server = Server(server_id='79b3b46d-c7d8-47d2-a59d-ce5ded79b63b')
+
+print(server.name)
+# Output: 'vwn-gpu-2025-12-05-21-03-17-0'
+
+print(server.id)
+# Output: '79b3b46d-c7d8-47d2-a59d-ce5ded79b63b'
+```
+
+<Info>
+You can initialize a Server by either `server_id` or `name`.
+</Info>
+
+## Server Owner
+
+Access the user who created the server:
+
+```python
+from myos.server import Server
+
+server = Server(server_id='79b3b46d-c7d8-47d2-a59d-ce5ded79b63b')
+
+print(server.user.email)
+# Output: 'neo@matrix.net'
+
+print(server.user.name)
+# Output: 'wup22514'
+```
+
+<Note>
+The `user` property returns a full `User` object, so you can access all user properties and methods.
+</Note>
+
+## Server Flavor
+
+Get detailed flavor information including CPU, RAM, and disk:
+
+<CodeGroup>
+
+```python Server Flavor Details
+from myos.server import Server
+
+server = Server(server_id='79b3b46d-c7d8-47d2-a59d-ce5ded79b63b')
+
+print(server.flavor.name)
+print(f"CPU: {server.flavor.cpu}")
+print(f"RAM: {server.flavor.ram} MB")
+print(f"Disk: {server.flavor.disk} GB")
+```
+
+```python Output
+g-a100-80gb-2022.x1
+CPU: 28
+RAM: 230400 MB
+Disk: 1536 GB
+```
+
+</CodeGroup>
+
+## Server Image
+
+Access the image used to create the server:
+
+```python
+from myos.server import Server
+
+server = Server(server_id='79b3b46d-c7d8-47d2-a59d-ce5ded79b63b')
+
+print(server.image.name)
+# Output: 'rocky-8-aqml'
+
+print(server.image.id)
+# Output: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+```
+
+## Server Status
+
+Check the current status of a server:
+
+```python
+from myos.server import Server
+
+server = Server(server_id='79b3b46d-c7d8-47d2-a59d-ce5ded79b63b')
+
+print(server.status)
+# Output: 'ACTIVE' (or 'SHUTOFF', 'ERROR', etc.)
+```
+
+## Hypervisor Location
+
+Find out which hypervisor is hosting the server:
+
+```python
+from myos.server import Server
+
+server = Server(server_id='79b3b46d-c7d8-47d2-a59d-ce5ded79b63b')
+
+print(server.hypervisor.hostname)
+# Output: 'hv-a100x8-8.matrix.net'
+
+print(server.hypervisor.status)
+# Output: 'enabled'
+```
+
+<Tip>
+The `hypervisor` property returns a full `Hypervisor` object, allowing you to query other servers on the same host.
+</Tip>
+
+## Complete Server Information
+
+Here's a comprehensive example showing all server details:
+
+```python
+from myos.server import Server
+
+def print_server_details(server_id):
+    """Print complete server information"""
+    server = Server(server_id=server_id)
+    
+    print(f"Server Details:")
+    print(f"  Name: {server.name}")
+    print(f"  ID: {server.id}")
+    print(f"  Status: {server.status}")
+    
+    print(f"\nOwner:")
+    print(f"  Name: {server.user.name}")
+    print(f"  Email: {server.user.email}")
+    print(f"  Domain: {server.user.domain.name}")
+    
+    print(f"\nFlavor:")
+    print(f"  Name: {server.flavor.name}")
+    print(f"  CPUs: {server.flavor.cpu}")
+    print(f"  RAM: {server.flavor.ram} MB")
+    print(f"  Disk: {server.flavor.disk} GB")
+    
+    print(f"\nImage:")
+    print(f"  Name: {server.image.name}")
+    print(f"  ID: {server.image.id}")
+    
+    print(f"\nHypervisor:")
+    print(f"  Hostname: {server.hypervisor.hostname}")
+    print(f"  Status: {server.hypervisor.status}")
+    print(f"  State: {server.hypervisor.state}")
+
+# Run the details
+print_server_details('79b3b46d-c7d8-47d2-a59d-ce5ded79b63b')
+```
+
+## Working with Server Collections
+
+When working with multiple servers from a project or user:
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+for server in servers:
+    print(f"{server.name}:")
+    print(f"  Status: {server.status}")
+    print(f"  Flavor: {server.flavor.name}")
+    print(f"  Owner: {server.user.email}")
+    print(f"  Hypervisor: {server.hypervisor.hostname}")
+    print()
+```
+
+<Note>
+Each property access makes an API call. If you're working with many servers, consider caching frequently accessed data.
+</Note>
+
+## Filtering Servers by Property
+
+Use EntityList filtering to find specific servers:
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Find all servers using a specific flavor
+gpu_servers = servers.filter(lambda s: 'gpu' in s.flavor.name.lower())
+
+print(f"GPU servers: {len(gpu_servers)}")
+for server in gpu_servers:
+    print(f"  - {server.name} ({server.flavor.name})")
+```
+
+## Finding Servers by Image
+
+Get all servers using a specific image:
+
+```python
+from myos.image import Image
+
+image = Image(name='rocky-8-aqml')
+servers = image.servers
+
+print(f"Servers using {image.name}: {len(servers)}")
+for server in servers:
+    print(f"  - {server.name}")
+```
+
+## Finding Servers by Flavor
+
+Get all servers using a specific flavor:
+
+```python
+from myos.flavor import Flavor
+
+flavor = Flavor(name='g-a100-80gb-2022.x1')
+servers = flavor.servers
+
+print(f"Servers using {flavor.name}: {len(servers)}")
+for server in servers:
+    print(f"  - {server.name}")
+    print(f"    Owner: {server.user.email}")
+```
+
+## Using Different Clouds
+
+Query servers from a different cloud:
+
+```python
+from myos.server import Server
+from myos.cloud import Cloud
+
+dev_cloud = Cloud("admin-dev")
+server = Server(server_id='79b3b46d-c7d8-47d2-a59d-ce5ded79b63b', cloud=dev_cloud)
+
+print(server.name)
+print(server.status)
+```
+
+## Resource Relationships
+
+The Server object connects to many other resources:
+
+```python
+from myos.server import Server
+
+server = Server(server_id='79b3b46d-c7d8-47d2-a59d-ce5ded79b63b')
+
+# Get other servers owned by the same user
+user_servers = server.user.servers
+print(f"User has {len(user_servers)} servers total")
+
+# Get other servers on the same hypervisor
+hv_servers = server.hypervisor.servers
+print(f"Hypervisor hosts {len(hv_servers)} servers total")
+
+# Get other servers using the same image
+image_servers = server.image.servers
+print(f"{len(image_servers)} servers use this image")
+```
+
+<Tip>
+These relationship properties make it easy to explore your cloud infrastructure and understand resource usage patterns.
+</Tip>
+
+## Available Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `name` | str | Server name |
+| `id` | str | Server unique identifier |
+| `status` | str | Current server status (ACTIVE, SHUTOFF, etc.) |
+| `user` | User | User who created the server |
+| `flavor` | Flavor | Server flavor with CPU/RAM/disk specs |
+| `image` | Image | Image used to create the server |
+| `hypervisor` | Hypervisor | Hypervisor hosting the server |
+
+## Next Steps
+
+- Learn about [Hypervisor Servers](/examples/hypervisor-servers)
+- Explore [Project Resources](/examples/project-resources)
+- Master [Advanced Queries](/examples/advanced-queries) for filtering and sorting

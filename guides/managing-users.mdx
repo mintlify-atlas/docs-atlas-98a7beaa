@@ -1,0 +1,209 @@
+---
+title: Managing Users
+description: Learn how to create, query, and manage OpenStack users with the myos SDK
+---
+
+## Overview
+
+The `User` class provides an interface for working with OpenStack users. You can query user details, access their domains, projects, and servers.
+
+## Creating a User Instance
+
+<Steps>
+  <Step title="Initialize by name">
+    Create a user instance using their username:
+
+    ```python
+    from myos.user import User
+
+    user = User(name="wup22514")
+    ```
+  </Step>
+
+  <Step title="Initialize by ID">
+    Alternatively, create a user instance using their ID:
+
+    ```python
+    user = User(user_id="ea5c942075e14ea0a778ca63d0d8c332")
+    ```
+  </Step>
+
+  <Step title="Specify domain (optional)">
+    When creating a user by name, you can specify the domain:
+
+    ```python
+    user = User(name="wup22514", domain_name="stfc")
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  The SDK uses lazy loading - user data is only fetched from OpenStack when you access a property.
+</Note>
+
+## Querying User Properties
+
+### Basic Properties
+
+Access core user information:
+
+```python
+from myos.user import User
+
+user = User(name="wup22514")
+
+# Get user details
+print(user.name)         # Username
+print(user.id)           # User ID
+print(user.email)        # Email address
+print(user.description)  # User description
+```
+
+### Domain Information
+
+Retrieve the domain associated with a user:
+
+```python
+user = User(name="wup22514")
+
+# Access user's domain
+domain = user.domain
+print(domain.name)  # Domain name
+print(domain.id)    # Domain ID
+```
+
+<Info>
+  The `domain` property returns a `Domain` object, allowing you to traverse the relationship hierarchy.
+</Info>
+
+## Relationship Traversal
+
+### Accessing User Projects
+
+Get all projects a user has access to:
+
+```python
+user = User(name="wup22514")
+
+# Get all projects for this user
+projects = user.projects
+
+print(f"User has access to {len(projects)} projects")
+
+for project in projects:
+    print(f"Project: {project.name}")
+    print(f"ID: {project.id}")
+```
+
+<Accordion title="Example Output">
+  ```
+  User has access to 2 projects
+  Project: J-C-Bejar-Scratch-Space
+  ID: 5b37be0037c94b69a35e72cb2da8b016
+  Project: Tier-1 Prod Internal
+  ID: 22547d0eef6445ff9febfedec9b4da4a
+  ```
+</Accordion>
+
+<Warning>
+  The `projects` property uses role assignments to determine project access. According to the source code comments, this implementation may need refinement.
+</Warning>
+
+### Accessing User Servers
+
+Retrieve all servers created by a user across all projects:
+
+```python
+user = User(name="wup22514")
+
+# Get all servers created by this user
+servers = user.servers
+
+print(f"User has created {len(servers)} servers")
+
+for server in servers:
+    print(f"Server: {server.name}")
+    print(f"ID: {server.id}")
+    print(f"Status: {server.status}")
+    print("---")
+```
+
+<Accordion title="Example Output">
+  ```
+  User has created 2 servers
+  Server: vwn-gpu-2025-12-17-13-17-19-0
+  ID: 4027da2e-c42b-411b-88f7-cc41f431959a
+  Status: ACTIVE
+  ---
+  Server: vwn-gpu-2025-12-17-11-17-48-0
+  ID: 9734feb4-b6b4-443d-847b-b3887230662c
+  Status: ACTIVE
+  ---
+  ```
+</Accordion>
+
+<Tip>
+  The `servers` property searches across all projects, making it useful for auditing user resource usage.
+</Tip>
+
+## Complete Example
+
+Here's a comprehensive example showing how to work with users:
+
+```python
+from myos.user import User
+from myos.cloud import Cloud
+
+# Initialize user with custom cloud config
+cloud = Cloud()
+user = User(name="wup22514", domain_name="stfc", cloud=cloud)
+
+# Display user information
+print(f"User Information:")
+print(f"  Name: {user.name}")
+print(f"  ID: {user.id}")
+print(f"  Email: {user.email}")
+print(f"  Domain: {user.domain.name}")
+
+# List all projects
+print(f"\nProjects ({len(user.projects)}):")
+for project in user.projects:
+    print(f"  - {project.name}")
+    # You can further traverse to project servers
+    project_servers = project.servers
+    print(f"    Servers in project: {len(project_servers)}")
+
+# List all servers created by user
+print(f"\nServers created by user ({len(user.servers)}):")
+for server in user.servers:
+    print(f"  - {server.name} ({server.status})")
+    # Traverse to server's hypervisor
+    hypervisor = server.hypervisor
+    print(f"    Running on: {hypervisor.hostname}")
+```
+
+## Cloud Configuration
+
+All user operations require authentication. By default, the SDK uses the default cloud configuration:
+
+```python
+from myos.user import User
+from myos.cloud import Cloud
+
+# Use default cloud
+user = User(name="wup22514")
+
+# Use specific cloud configuration
+custom_cloud = Cloud(cloud="production")
+user = User(name="wup22514", cloud=custom_cloud)
+```
+
+<Note>
+  The SDK uses OpenStack CLI commands under the hood with `--os-cloud` configuration.
+</Note>
+
+## Related Resources
+
+- [Managing Projects](/guides/managing-projects) - Work with OpenStack projects
+- [Managing Servers](/guides/managing-servers) - Manage virtual machines
+- [Working with Domains](/guides/working-with-domains) - Domain management

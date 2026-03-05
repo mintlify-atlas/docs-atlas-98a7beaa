@@ -1,0 +1,182 @@
+---
+title: 'EntityList'
+description: 'A specialized list class with functional programming methods'
+---
+
+## EntityList
+
+The `EntityList` class extends Python's built-in `list` type to provide functional programming methods for filtering, sorting, and mapping operations. All methods return new `EntityList` instances, allowing for method chaining.
+
+### Class Signature
+
+```python
+class EntityList(list)
+```
+
+Inherits from Python's built-in `list` class, so all standard list methods are available.
+
+---
+
+## Methods
+
+### filter()
+
+Filters the list based on a predicate function, returning a new `EntityList` containing only elements that satisfy the condition.
+
+```python
+def filter(self, filter_lambda)
+```
+
+<ParamField path="filter_lambda" type="callable" required>
+  A function that takes a single element and returns `True` to include it in the result, or `False` to exclude it.
+</ParamField>
+
+<ResponseField name="return" type="EntityList">
+  A new `EntityList` containing only the elements for which `filter_lambda` returned `True`.
+</ResponseField>
+
+#### Example
+
+```python
+from myos import EntityList
+
+# Create an EntityList of numbers
+numbers = EntityList([1, 2, 3, 4, 5, 6])
+
+# Filter for even numbers
+even_numbers = numbers.filter(lambda x: x % 2 == 0)
+print(even_numbers)  # [2, 4, 6]
+
+# Filter entities by attribute
+users = EntityList([
+    {"name": "Alice", "age": 30},
+    {"name": "Bob", "age": 25},
+    {"name": "Charlie", "age": 35}
+])
+older_users = users.filter(lambda u: u["age"] > 28)
+print(older_users)  # [{"name": "Alice", "age": 30}, {"name": "Charlie", "age": 35}]
+```
+
+---
+
+### sort()
+
+Sorts the list based on a key function, returning a new sorted `EntityList`.
+
+```python
+def sort(self, sort_lambda)
+```
+
+<ParamField path="sort_lambda" type="callable" required>
+  A function that takes a single element and returns a value to use for sorting. Elements are sorted based on the return values of this function.
+</ParamField>
+
+<ResponseField name="return" type="EntityList">
+  A new `EntityList` with elements sorted according to the key function.
+</ResponseField>
+
+#### Example
+
+```python
+from myos import EntityList
+
+# Sort numbers in ascending order
+numbers = EntityList([5, 2, 8, 1, 9])
+sorted_numbers = numbers.sort(lambda x: x)
+print(sorted_numbers)  # [1, 2, 5, 8, 9]
+
+# Sort in descending order
+descending = numbers.sort(lambda x: -x)
+print(descending)  # [9, 8, 5, 2, 1]
+
+# Sort entities by attribute
+users = EntityList([
+    {"name": "Charlie", "age": 35},
+    {"name": "Alice", "age": 30},
+    {"name": "Bob", "age": 25}
+])
+sorted_by_age = users.sort(lambda u: u["age"])
+print([u["name"] for u in sorted_by_age])  # ["Bob", "Alice", "Charlie"]
+
+sorted_by_name = users.sort(lambda u: u["name"])
+print([u["name"] for u in sorted_by_name])  # ["Alice", "Bob", "Charlie"]
+```
+
+---
+
+### map()
+
+Transforms each element in the list using a mapping function, returning a new `EntityList` with the transformed elements.
+
+```python
+def map(self, map_lambda)
+```
+
+<ParamField path="map_lambda" type="callable" required>
+  A function that takes a single element and returns a transformed value.
+</ParamField>
+
+<ResponseField name="return" type="EntityList">
+  A new `EntityList` containing the transformed elements.
+</ResponseField>
+
+#### Example
+
+```python
+from myos import EntityList
+
+# Square all numbers
+numbers = EntityList([1, 2, 3, 4, 5])
+squared = numbers.map(lambda x: x ** 2)
+print(squared)  # [1, 4, 9, 16, 25]
+
+# Extract specific attributes
+users = EntityList([
+    {"name": "Alice", "age": 30},
+    {"name": "Bob", "age": 25},
+    {"name": "Charlie", "age": 35}
+])
+names = users.map(lambda u: u["name"])
+print(names)  # ["Alice", "Bob", "Charlie"]
+
+# Transform data
+ages = users.map(lambda u: {"name": u["name"], "senior": u["age"] >= 30})
+print(ages)
+# [{"name": "Alice", "senior": True}, {"name": "Bob", "senior": False}, {"name": "Charlie", "senior": True}]
+```
+
+---
+
+## Method Chaining
+
+Since all methods return `EntityList` instances, you can chain operations together:
+
+```python
+from myos import EntityList
+
+users = EntityList([
+    {"name": "Alice", "age": 30, "active": True},
+    {"name": "Bob", "age": 25, "active": False},
+    {"name": "Charlie", "age": 35, "active": True},
+    {"name": "Diana", "age": 28, "active": True}
+])
+
+# Chain filter, sort, and map operations
+result = (users
+    .filter(lambda u: u["active"])           # Get active users
+    .filter(lambda u: u["age"] >= 28)        # Age 28 or older
+    .sort(lambda u: u["age"])                # Sort by age
+    .map(lambda u: u["name"])                # Extract names
+)
+
+print(result)  # ["Diana", "Alice", "Charlie"]
+```
+
+---
+
+## Notes
+
+- `EntityList` inherits from Python's `list`, so all standard list methods (`append()`, `extend()`, `pop()`, etc.) are available.
+- The functional methods (`filter()`, `sort()`, `map()`) do not modify the original list; they return new instances.
+- Empty `EntityList` instances can be created: `empty = EntityList()`
+- You can initialize from any iterable: `EntityList([1, 2, 3])` or `EntityList(range(10))`

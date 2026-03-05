@@ -1,0 +1,136 @@
+---
+title: 'Server'
+description: 'Interface for managing OpenStack server instances'
+---
+
+## Server
+
+The `Server` class represents an OpenStack server (virtual machine) instance and provides access to server properties including status, flavor, image, user, and hypervisor information.
+
+### Constructor
+
+```python
+Server(server_id=None, name=None, cloud=Cloud())
+```
+
+<ParamField path="server_id" type="str" optional>
+  The unique identifier for the server. Use either `server_id` or `name` to identify the server.
+</ParamField>
+
+<ParamField path="name" type="str" optional>
+  The name of the server. Use either `server_id` or `name` to identify the server.
+</ParamField>
+
+<ParamField path="cloud" type="Cloud" default="Cloud()">
+  The Cloud instance to use for API calls. Defaults to a new Cloud() instance.
+</ParamField>
+
+### Properties
+
+<ResponseField name="name" type="str">
+  Returns the name associated to this Server
+  
+  ```python
+  server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+  print(server.name)
+  ```
+</ResponseField>
+
+<ResponseField name="id" type="str">
+  Returns the server_id associated to this Server
+  
+  ```python
+  server = Server(name="my-server")
+  print(server.id)
+  ```
+</ResponseField>
+
+<ResponseField name="status" type="str">
+  Returns the status of this Server (e.g., "ACTIVE", "SHUTOFF", "ERROR")
+  
+  ```python
+  server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+  print(f"Server status: {server.status}")
+  ```
+</ResponseField>
+
+<ResponseField name="flavor" type="Flavor">
+  Returns the Flavor of this Server
+  
+  ```python
+  server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+  flavor = server.flavor
+  print(f"Flavor: {flavor.name}")
+  ```
+</ResponseField>
+
+<ResponseField name="image" type="Image">
+  Returns the Image of this Server
+  
+  ```python
+  server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+  image = server.image
+  print(f"Image: {image.name}")
+  ```
+</ResponseField>
+
+<ResponseField name="user" type="User">
+  Returns the User who created this Server
+  
+  ```python
+  server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+  user = server.user
+  print(f"Created by: {user.name}")
+  ```
+</ResponseField>
+
+<ResponseField name="hypervisor" type="Hypervisor">
+  Returns the Hypervisor where this Server is running
+  
+  ```python
+  server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+  hypervisor = server.hypervisor
+  print(f"Running on: {hypervisor.hostname}")
+  ```
+</ResponseField>
+
+## Usage Example
+
+```python
+from myos.server import Server
+from myos.cloud import Cloud
+
+# Initialize server by ID
+server = Server(server_id="79b3b46d-c7d8-47d2-a59d-ce5ded79b63b")
+print(f"Server name: {server.name}")
+print(f"Server ID: {server.id}")
+print(f"Status: {server.status}")
+
+# Initialize server by name
+server = Server(name="vwn-gpu-2025-12-17-13-17-19-0")
+print(f"Server ID: {server.id}")
+
+# Get server details
+flavor = server.flavor
+print(f"Flavor: {flavor.name} (ID: {flavor.id})")
+
+image = server.image
+print(f"Image: {image.name} (ID: {image.id})")
+
+# Get user information
+user = server.user
+print(f"Created by: {user.name}")
+print(f"User email: {user.email}")
+
+# Get hypervisor information
+hypervisor = server.hypervisor
+print(f"Running on hypervisor: {hypervisor.hostname}")
+
+# Use custom cloud configuration
+custom_cloud = Cloud("production")
+server = Server(name="prod-server-01", cloud=custom_cloud)
+if server.status == "ACTIVE":
+    print(f"Server {server.name} is running")
+elif server.status == "SHUTOFF":
+    print(f"Server {server.name} is shut down")
+```

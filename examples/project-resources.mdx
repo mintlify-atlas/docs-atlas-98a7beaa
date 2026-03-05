@@ -1,0 +1,272 @@
+---
+title: "Project Resources"
+description: "Manage projects and access their users, servers, and floating IPs"
+---
+
+## Overview
+
+The `Project` class provides access to project information and all associated resources including users, servers, floating IPs, and quotas.
+
+## Basic Project Lookup
+
+Retrieve project information by name:
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+
+print(project.id)
+# Output: '2d8252b430c2405da24d74df2004c24b'
+
+print(project.name)
+# Output: 'Condor'
+```
+
+<Info>
+You can initialize a Project by either `name` or `project_id`.
+</Info>
+
+## Project Users
+
+Retrieve all users with access to a project:
+
+<CodeGroup>
+
+```python List Project Users
+from myos.project import Project
+
+project = Project(name='Condor')
+users = project.users
+
+for user in users:
+    print(user.email)
+```
+
+```python Output
+neo@matrix.net
+trinity@matrix.net
+morpheus@matrix.net
+```
+
+</CodeGroup>
+
+## Project Servers
+
+Get all servers running in a project:
+
+<CodeGroup>
+
+```python List Project Servers
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+for server in servers:
+    print(server.id)
+```
+
+```python Output
+7da973eb-794c-4557-bf87-e5987dd8efad
+8802f035-f198-4129-9a87-f6ded8940db0
+c05a14b1-046b-4e4c-bba2-2c164aee28dd
+9749d097-5ee0-488b-9a7f-41eb6250659c
+78fa7852-8f63-4f95-9334-f5310ea9b141
+f297f3e8-dc1b-4729-971b-563872c0ab33
+1de66266-6a5c-41de-ba41-eecc320f0f96
+3adf6e50-ae3b-4788-994e-4f5fffacbfba
+77deb760-3394-462a-983a-ef7500753efa
+535def1c-13fb-4b1f-827f-6568eb10db64
+53a98cbe-18a6-4e41-8ba8-a67518c2d8de
+b12a35c0-73d6-437b-a0a4-40c8482831ec
+d3bd597d-db34-49cd-bf5d-eb757e02fb4d
+79b3b46d-c7d8-47d2-a59d-ce5ded79b63b
+```
+
+</CodeGroup>
+
+<Note>
+The `servers` property returns an `EntityList` containing `Server` objects. You can access detailed server properties by iterating through the list.
+</Note>
+
+## Floating IPs
+
+Retrieve all floating IPs allocated to a project:
+
+```python
+from myos.project import Project
+
+project = Project(name='lsst-drp')
+fips = project.fips
+
+for fip in fips:
+    print(f"IP: {fip.ip}")
+    print(f"ID: {fip.id}")
+```
+
+## Project Quotas
+
+Access quota information for a project:
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+quotas = project.quotas
+
+print(f"Cores: {quotas.cores}")
+print(f"RAM: {quotas.ram}")
+print(f"Instances: {quotas.instances}")
+```
+
+## Project Hierarchy
+
+Projects can have parent-child relationships:
+
+```python
+from myos.project import Project
+
+project = Project(name='Cloud-Jupyter-Dev')
+
+if project.parent:
+    print(f"Parent project: {project.parent.name}")
+else:
+    print("This is a root project")
+```
+
+## Project Tags
+
+Retrieve tags associated with a project:
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+tags = project.tags
+
+for tag in tags:
+    print(tag)
+```
+
+## Complete Project Summary
+
+Here's a comprehensive example that shows all project resources:
+
+```python
+from myos.project import Project
+
+def print_project_summary(project_name):
+    """Print a complete summary of project resources"""
+    project = Project(name=project_name)
+    
+    print(f"Project: {project.name}")
+    print(f"ID: {project.id}")
+    print(f"Tags: {', '.join(project.tags) if project.tags else 'None'}")
+    
+    # Users
+    users = project.users
+    print(f"\nUsers ({len(users)}):")
+    for user in users:
+        print(f"  - {user.email}")
+    
+    # Servers
+    servers = project.servers
+    print(f"\nServers ({len(servers)}):")
+    for server in servers:
+        print(f"  - {server.name} ({server.id})")
+    
+    # Floating IPs
+    fips = project.fips
+    print(f"\nFloating IPs ({len(fips)}):")
+    for fip in fips:
+        print(f"  - {fip.ip}")
+    
+    # Quotas
+    quotas = project.quotas
+    print(f"\nQuotas:")
+    print(f"  Cores: {quotas.cores}")
+    print(f"  RAM: {quotas.ram} MB")
+    print(f"  Instances: {quotas.instances}")
+
+# Run the summary
+print_project_summary('Condor')
+```
+
+## Managing Project Users
+
+Add a user to a project:
+
+```python
+from myos.project import Project
+from myos.user import User
+
+project = Project(name='Condor')
+user = User(name='wup22514', domain_name='stfc')
+
+# Add the user to the project
+project.add(user)
+```
+
+<Note>
+This feature requires admin privileges to manage project memberships.
+</Note>
+
+## Working with Different Clouds
+
+Specify a custom cloud configuration:
+
+```python
+from myos.project import Project
+from myos.cloud import Cloud
+
+# Use a different cloud
+dev_cloud = Cloud("admin-dev")
+project = Project(name='Condor', cloud=dev_cloud)
+
+print(project.name)
+print(len(project.servers))
+```
+
+## Filtering Project Servers
+
+Combine project queries with EntityList filtering:
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Filter for active servers only
+active_servers = servers.filter(lambda s: s.status == 'ACTIVE')
+
+print(f"Total servers: {len(servers)}")
+print(f"Active servers: {len(active_servers)}")
+
+for server in active_servers:
+    print(f"  - {server.name}")
+```
+
+<Tip>
+See the [Advanced Queries](/examples/advanced-queries) page for more filtering and sorting examples.
+</Tip>
+
+## Available Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `name` | str | Project name |
+| `id` | str | Project unique identifier |
+| `parent` | Project | Parent project (if any) |
+| `tags` | list | List of project tags |
+| `users` | EntityList | Users with access to the project |
+| `servers` | EntityList | Servers running in the project |
+| `fips` | EntityList | Floating IPs allocated to the project |
+| `quotas` | Quota | Project quota information |
+
+## Next Steps
+
+- Learn about [Server Details](/examples/server-details)
+- Explore [User Information](/examples/user-info)
+- Master [Advanced Queries](/examples/advanced-queries) with filtering and sorting

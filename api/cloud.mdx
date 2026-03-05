@@ -1,0 +1,101 @@
+---
+title: 'Cloud'
+description: 'Interface for interacting with OpenStack cloud instances'
+---
+
+## Cloud
+
+The `Cloud` class provides access to OpenStack cloud resources including hypervisors, flavors, images, projects, and floating IPs.
+
+### Constructor
+
+```python
+Cloud(cloud="admin")
+```
+
+<ParamField path="cloud" type="str" default="admin">
+  The name of the cloud configuration to use from your OpenStack configuration
+</ParamField>
+
+### Properties
+
+<ResponseField name="hypervisors" type="EntityList[Hypervisor]">
+  Returns the entire list of Hypervisor objects for this cloud instance
+  
+  ```python
+  cloud = Cloud("admin")
+  hypervisors = cloud.hypervisors
+  print(len(hypervisors))
+  ```
+</ResponseField>
+
+<ResponseField name="flavors" type="EntityList[Flavor]">
+  Returns the entire list of Flavor objects for this cloud instance
+  
+  ```python
+  cloud = Cloud("admin")
+  flavors = cloud.flavors
+  for flavor in flavors:
+      print(flavor.name)
+  ```
+</ResponseField>
+
+<ResponseField name="images" type="EntityList[Image]">
+  Returns the entire list of Image objects for this cloud instance
+  
+  ```python
+  cloud = Cloud("admin")
+  images = cloud.images
+  for image in images:
+      print(image.name)
+  ```
+</ResponseField>
+
+<ResponseField name="projects" type="EntityList[Project]">
+  Returns the entire list of Project objects for this cloud instance
+  
+  ```python
+  cloud = Cloud("admin")
+  projects = cloud.projects
+  for project in projects:
+      print(project.name)
+  ```
+</ResponseField>
+
+<ResponseField name="fips" type="EntityList[FloatingIP]">
+  Returns the entire list of FloatingIP objects for this cloud instance
+  
+  ```python
+  cloud = Cloud("admin")
+  fips = cloud.fips
+  print(f"Total floating IPs: {len(fips)}")
+  ```
+</ResponseField>
+
+## Usage Example
+
+```python
+from myos.cloud import Cloud
+
+# Initialize cloud connection
+cloud = Cloud("admin")
+
+# Get all hypervisors
+hypervisors = cloud.hypervisors
+print(f"Available hypervisors: {len(hypervisors)}")
+
+# Get all flavors
+flavors = cloud.flavors
+for flavor in flavors:
+    print(f"Flavor: {flavor.name}")
+
+# Get all projects
+projects = cloud.projects
+for project in projects:
+    print(f"Project: {project.name} (ID: {project.id})")
+
+# Get floating IPs
+fips = cloud.fips
+for fip in fips:
+    print(f"Floating IP: {fip.ip}")
+```

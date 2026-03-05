@@ -1,0 +1,417 @@
+---
+title: Working with Domains
+description: Learn how to query and manage OpenStack domains with the myos SDK
+---
+
+## Overview
+
+The `Domain` class provides an interface for working with OpenStack domains. Domains are containers for users and projects, providing administrative boundaries and identity scope within an OpenStack cloud.
+
+## Understanding Domains
+
+Domains in OpenStack serve several purposes:
+
+- **Identity Scope**: Users and projects are scoped to a domain
+- **Administrative Boundaries**: Each domain can have its own administrators
+- **Multi-Tenancy**: Domains enable separation between different organizations
+- **Naming Isolation**: User and project names must be unique within a domain, but can be duplicated across domains
+
+<Info>
+  Think of domains as top-level organizational units, similar to separate companies or departments within an OpenStack cloud.
+</Info>
+
+## Creating a Domain Instance
+
+<Steps>
+  <Step title="Initialize by name">
+    Create a domain instance using the domain name:
+
+    ```python
+    from myos.domain import Domain
+
+    domain = Domain(name="default")
+    ```
+  </Step>
+
+  <Step title="Initialize by ID">
+    Alternatively, create a domain instance using the domain ID:
+
+    ```python
+    domain = Domain(domain_id="default")
+    ```
+  </Step>
+
+  <Step title="Specify cloud configuration">
+    Optionally specify a custom cloud configuration:
+
+    ```python
+    from myos.cloud import Cloud
+
+    cloud = Cloud(cloud="admin")
+    domain = Domain(name="stfc", cloud=cloud)
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  The SDK uses lazy loading - domain data is only fetched from OpenStack when you access a property.
+</Note>
+
+## Querying Domain Properties
+
+### Basic Properties
+
+Access core domain information:
+
+```python
+from myos.domain import Domain
+
+domain = Domain(name="stfc")
+
+# Get domain details
+print(domain.name)  # Domain name
+print(domain.id)    # Domain ID
+```
+
+<Accordion title="Common Domain Names">
+  - **default**: The default domain in most OpenStack installations
+  - **stfc**: Example of an organization-specific domain
+  - **jasmin**: Example of a project-specific domain
+</Accordion>
+
+## Managing Domain Projects
+
+### Listing All Projects
+
+Retrieve all projects within a domain:
+
+```python
+from myos.domain import Domain
+
+domain = Domain(name="default")
+
+# Get all projects in this domain
+projects = domain.projects
+
+print(f"Domain '{domain.name}' has {len(projects)} projects\n")
+
+for project in projects:
+    print(f"Project: {project.name}")
+    print(f"  ID: {project.id}")
+    print()
+```
+
+<Accordion title="Example Output">
+  ```
+  Domain 'default' has 150 projects
+
+  Project: &Facts
+    ID: 93da37ef58344f4bac74d0b8b101f591
+
+  Project: A-Aziz-Scratch-Space
+    ID: 22dae50f357e468ca12a1fa1f27ca30a
+
+  Project: lsst-drp
+    ID: 22547d0eef6445ff9febfedec9b4da4a
+  ```
+</Accordion>
+
+<Warning>
+  Large domains can contain hundreds or thousands of projects. Consider filtering or pagination for production use.
+</Warning>
+
+## Managing Domain Users
+
+### Listing All Users
+
+Retrieve all users within a domain:
+
+```python
+from myos.domain import Domain
+
+domain = Domain(name="jasmin")
+
+# Get all users in this domain
+users = domain.users
+
+print(f"Domain '{domain.name}' has {len(users)} users\n")
+
+for user in users:
+    print(f"User: {user.name}")
+    print(f"  ID: {user.id}")
+    print()
+```
+
+<Accordion title="Example Output">
+  ```
+  Domain 'jasmin' has 523 users
+
+  User: mrichardson001
+    ID: 9c13fb710ddb74906be0791f08439e2581b9ba72a3f38599a4c5a7f50e5643ae
+
+  User: mnorton
+    ID: 665dd5f2f2327261b4a700c47072229c916f57936028b7f9abd51fdad5447048
+  ```
+</Accordion>
+
+<Info>
+  The `users` property returns all users in the domain, regardless of their role or project assignments.
+</Info>
+
+## Relationship Traversal
+
+### From Domain to Projects to Servers
+
+Traverse the hierarchy from domain to resources:
+
+```python
+from myos.domain import Domain
+
+domain = Domain(name="default")
+
+print(f"Analyzing domain: {domain.name}\n")
+
+# Get projects in domain
+projects = domain.projects
+print(f"Projects in domain: {len(projects)}\n")
+
+# Analyze first few projects
+total_servers = 0
+
+for project in projects[:5]:  # First 5 projects
+    print(f"Project: {project.name}")
+    
+    # Get servers in this project
+    servers = project.servers
+    total_servers += len(servers)
+    
+    print(f"  Servers: {len(servers)}")
+    
+    # Show project users
+    users = project.users
+    print(f"  Users: {len(users)}")
+    
+    if servers:
+        # Show first server details
+        server = servers[0]
+        print(f"  Example server: {server.name}")
+        print(f"    Status: {server.status}")
+        print(f"    Hypervisor: {server.hypervisor.hostname}")
+    
+    print()
+
+print(f"Total servers in analyzed projects: {total_servers}")
+```
+
+### From Domain to Users to Servers
+
+Analyze user activity within a domain:
+
+```python
+from myos.domain import Domain
+
+domain = Domain(name="stfc")
+
+print(f"User Activity Report for Domain: {domain.name}\n")
+
+# Get all users
+users = domain.users
+print(f"Total users: {len(users)}\n")
+
+# Analyze user resource usage
+active_users = 0
+
+for user in users[:10]:  # First 10 users
+    print(f"User: {user.name}")
+    
+    # Get user's servers
+    servers = user.servers
+    
+    if servers:
+        active_users += 1
+        print(f"  Servers: {len(servers)}")
+        
+        # Count active servers
+        active_servers = [s for s in servers if s.status == "ACTIVE"]
+        print(f"  Active: {len(active_servers)}")
+        
+        # Get user's projects
+        projects = user.projects
+        print(f"  Projects: {len(projects)}")
+    else:
+        print(f"  No servers")
+    
+    print()
+
+print(f"Users with servers: {active_users} out of {min(10, len(users))} checked")
+```
+
+<Tip>
+  Domain-level analysis is useful for generating administrative reports and understanding resource distribution.
+</Tip>
+
+## Domain Resource Summary
+
+Generate a comprehensive summary of domain resources:
+
+```python
+from myos.domain import Domain
+
+domain = Domain(name="default")
+
+print("=" * 60)
+print(f"Domain Resource Summary: {domain.name}")
+print("=" * 60)
+
+# Basic information
+print(f"\nDomain Information:")
+print(f"  Name: {domain.name}")
+print(f"  ID: {domain.id}")
+
+# Project statistics
+projects = domain.projects
+print(f"\nProjects: {len(projects)}")
+
+if projects:
+    # Analyze projects
+    projects_with_servers = 0
+    total_project_users = 0
+    
+    for project in projects:
+        servers = project.servers
+        if servers:
+            projects_with_servers += 1
+        total_project_users += len(project.users)
+    
+    print(f"  Projects with servers: {projects_with_servers}")
+    print(f"  Average users per project: {total_project_users / len(projects):.1f}")
+
+# User statistics
+users = domain.users
+print(f"\nUsers: {len(users)}")
+
+if users:
+    # Sample user analysis (first 50 users for performance)
+    sample_users = users[:50]
+    users_with_servers = 0
+    total_user_servers = 0
+    
+    for user in sample_users:
+        servers = user.servers
+        if servers:
+            users_with_servers += 1
+            total_user_servers += len(servers)
+    
+    if users_with_servers > 0:
+        print(f"  Users with servers (sample): {users_with_servers}/{len(sample_users)}")
+        print(f"  Average servers per active user: {total_user_servers / users_with_servers:.1f}")
+
+print("\n" + "=" * 60)
+```
+
+<Warning>
+  Domain-wide analysis can be resource-intensive. Consider implementing caching and rate limiting for production dashboards.
+</Warning>
+
+## Cross-Domain User Lookup
+
+When working with users from different domains:
+
+```python
+from myos.user import User
+
+# User without domain defaults to 'default' domain
+user1 = User(name="admin")
+print(f"User: {user1.name}")
+print(f"Domain: {user1.domain.name}")
+
+# Specify domain explicitly
+user2 = User(name="wup22514", domain_name="stfc")
+print(f"\nUser: {user2.name}")
+print(f"Domain: {user2.domain.name}")
+
+# Compare domains
+if user1.domain.id == user2.domain.id:
+    print("\nUsers are in the same domain")
+else:
+    print("\nUsers are in different domains")
+```
+
+<Note>
+  Always specify the domain when working with users if you're not using the default domain.
+</Note>
+
+## Complete Example
+
+Here's a comprehensive example for domain management:
+
+```python
+from myos.domain import Domain
+from myos.cloud import Cloud
+
+# Initialize domain with admin cloud
+admin_cloud = Cloud(cloud="admin")
+domain = Domain(name="default", cloud=admin_cloud)
+
+print("=" * 60)
+print(f"Domain Analysis: {domain.name}")
+print("=" * 60)
+
+# Basic information
+print(f"\nDomain ID: {domain.id}")
+
+# Project analysis
+projects = domain.projects
+print(f"\n{'='*20} Projects {'='*20}")
+print(f"Total: {len(projects)}")
+
+if projects:
+    print(f"\nSample Projects (first 5):")
+    for project in projects[:5]:
+        print(f"\n  {project.name}")
+        print(f"    ID: {project.id}")
+        print(f"    Servers: {len(project.servers)}")
+        print(f"    Users: {len(project.users)}")
+        print(f"    Tags: {', '.join(project.tags) if project.tags else 'None'}")
+
+# User analysis
+users = domain.users
+print(f"\n{'='*20} Users {'='*20}")
+print(f"Total: {len(users)}")
+
+if users:
+    print(f"\nSample Users (first 5):")
+    for user in users[:5]:
+        print(f"\n  {user.name}")
+        print(f"    ID: {user.id}")
+        print(f"    Projects: {len(user.projects)}")
+        print(f"    Servers: {len(user.servers)}")
+
+print("\n" + "=" * 60)
+```
+
+## Cloud Configuration
+
+Domain operations typically require admin privileges:
+
+```python
+from myos.domain import Domain
+from myos.cloud import Cloud
+
+# Use default cloud
+domain = Domain(name="default")
+
+# Use specific admin cloud configuration
+admin_cloud = Cloud(cloud="admin")
+domain = Domain(name="stfc", cloud=admin_cloud)
+```
+
+<Note>
+  Ensure your cloud configuration has sufficient privileges to query domain information.
+</Note>
+
+## Related Resources
+
+- [Managing Users](/guides/managing-users) - Work with domain users
+- [Managing Projects](/guides/managing-projects) - Manage domain projects
+- [Managing Servers](/guides/managing-servers) - Work with virtual machines

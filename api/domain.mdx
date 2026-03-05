@@ -1,0 +1,95 @@
+---
+title: 'Domain'
+description: 'API reference for the Domain class'
+---
+
+## Domain
+
+The `Domain` class provides an interface to interact with OpenStack domains, allowing you to retrieve information about domains and their associated projects and users.
+
+### Constructor
+
+```python
+Domain(domain_id=None, name=None, cloud=Cloud())
+```
+
+Initialize a Domain instance.
+
+<ParamField path="domain_id" type="str" optional>
+  The unique identifier of the domain. Either `domain_id` or `name` should be provided.
+</ParamField>
+
+<ParamField path="name" type="str" optional>
+  The name of the domain. Either `domain_id` or `name` should be provided.
+</ParamField>
+
+<ParamField path="cloud" type="Cloud" default="Cloud()">
+  The Cloud instance to use for OpenStack operations. Defaults to a new Cloud instance.
+</ParamField>
+
+### Properties
+
+#### name
+
+```python
+@property
+def name(self) -> str
+```
+
+<ResponseField name="name" type="str">
+  Returns the name associated to this Domain.
+</ResponseField>
+
+#### id
+
+```python
+@property
+def id(self) -> str
+```
+
+<ResponseField name="id" type="str">
+  Returns the domain_id associated to this Domain.
+</ResponseField>
+
+#### projects
+
+```python
+@property
+def projects(self) -> EntityList
+```
+
+<ResponseField name="projects" type="EntityList">
+  Returns the list of Projects in this Domain.
+</ResponseField>
+
+#### users
+
+```python
+@property
+def users(self) -> EntityList
+```
+
+<ResponseField name="users" type="EntityList">
+  Returns the list of Users in this Domain.
+</ResponseField>
+
+### Usage Example
+
+```python
+from myos.domain import Domain
+
+# Initialize domain by name
+domain = Domain(name='jasmin')
+
+# Access domain properties
+print(domain.name)  # Get domain name
+print(domain.id)    # Get domain ID
+
+# List projects in the domain
+for project in domain.projects:
+    print(project.id)
+
+# List users in the domain
+for user in domain.users:
+    print(user.id)
+```

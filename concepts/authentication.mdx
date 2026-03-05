@@ -1,0 +1,329 @@
+---
+title: Authentication
+description: How to configure OpenStack authentication for myos
+---
+
+The myos SDK authenticates with OpenStack using the OpenStack CLI configuration. This means you don't need to manage credentials directly in your code—authentication is handled through the `--os-cloud` parameter.
+
+## Overview
+
+myos leverages the OpenStack CLI's built-in authentication mechanism. When you create a `Cloud` instance, you specify a cloud name that corresponds to a configuration in your OpenStack CLI setup.
+
+### How It Works
+
+1. You configure cloud credentials in your OpenStack CLI configuration files
+2. You create a `Cloud` instance with a cloud name: `Cloud("admin")`
+3. myos automatically passes `--os-cloud admin` to all OpenStack CLI commands
+4. The OpenStack CLI handles authentication using your pre-configured credentials
+
+<Info>
+This approach keeps credentials secure and separate from your application code, following security best practices.
+</Info>
+
+## OpenStack CLI Configuration
+
+### Configuration Files
+
+The OpenStack CLI stores cloud configurations in:
+
+- `~/.config/openstack/clouds.yaml` (primary location)
+- `/etc/openstack/clouds.yaml` (system-wide)
+
+### Basic Configuration Format
+
+Create or edit `~/.config/openstack/clouds.yaml`:
+
+```yaml clouds.yaml
+clouds:
+  admin:
+    auth:
+      auth_url: https://openstack.example.com:5000/v3
+      username: admin
+      password: your_password_here
+      project_name: admin
+      user_domain_name: Default
+      project_domain_name: Default
+    region_name: RegionOne
+    interface: public
+```
+
+<Warning>
+Make sure your `clouds.yaml` file has restricted permissions since it contains sensitive credentials:
+```bash
+chmod 600 ~/.config/openstack/clouds.yaml
+```
+</Warning>
+
+### Multiple Cloud Configurations
+
+You can configure multiple clouds in the same file:
+
+```yaml clouds.yaml
+clouds:
+  admin:
+    auth:
+      auth_url: https://openstack.example.com:5000/v3
+      username: admin
+      password: admin_password
+      project_name: admin
+      user_domain_name: Default
+      project_domain_name: Default
+    region_name: RegionOne
+    
+  production:
+    auth:
+      auth_url: https://prod.openstack.example.com:5000/v3
+      username: operator
+      password: operator_password
+      project_name: production
+      user_domain_name: Default
+      project_domain_name: Default
+    region_name: RegionOne
+    
+  development:
+    auth:
+      auth_url: https://dev.openstack.example.com:5000/v3
+      username: developer
+      password: dev_password
+      project_name: dev
+      user_domain_name: Default
+      project_domain_name: Default
+    region_name: RegionOne
+```
+
+## Using Authentication in myos
+
+### Default Cloud
+
+The `Cloud` class uses `"admin"` as the default cloud name:
+
+```python
+from myos.cloud import Cloud
+
+# Uses the 'admin' cloud from clouds.yaml
+cloud = Cloud()
+```
+
+This is equivalent to running:
+```bash
+openstack --os-cloud admin <command>
+```
+
+### Specifying a Cloud
+
+To use a different cloud configuration:
+
+```python
+from myos.cloud import Cloud
+
+# Use the 'production' cloud
+prod_cloud = Cloud(cloud="production")
+
+# Use the 'development' cloud
+dev_cloud = Cloud(cloud="development")
+```
+
+### Working with Multiple Clouds
+
+You can work with multiple clouds simultaneously:
+
+```python
+from myos.cloud import Cloud
+
+# Connect to multiple environments
+admin_cloud = Cloud("admin")
+prod_cloud = Cloud("production")
+dev_cloud = Cloud("development")
+
+# Compare resources across clouds
+print(f"Admin hypervisors: {len(admin_cloud.hypervisors)}")
+print(f"Production projects: {len(prod_cloud.projects)}")
+print(f"Development flavors: {len(dev_cloud.flavors)}")
+```
+
+## Authentication Flow
+
+When you access a resource through myos, here's what happens:
+
+```python
+from myos.cloud import Cloud
+
+cloud = Cloud("admin")
+hypervisors = cloud.hypervisors  # Triggers authentication
+```
+
+1. myos constructs the command: `openstack --os-cloud admin hypervisor list --format json`
+2. The OpenStack CLI reads credentials from `clouds.yaml` for the `admin` cloud
+3. The CLI authenticates with the OpenStack identity service (Keystone)
+4. The CLI retrieves and returns data in JSON format
+5. myos parses the JSON and creates Python objects
+
+<Note>
+Authentication tokens are managed automatically by the OpenStack CLI and are cached for subsequent requests.
+</Note>
+
+## Resource-Specific Authentication
+
+When you create resource objects directly (not through the `Cloud` class), you can pass a specific cloud context:
+
+```python
+from myos.cloud import Cloud
+from myos.hypervisor import Hypervisor
+
+# Create a cloud context
+admin_cloud = Cloud("admin")
+prod_cloud = Cloud("production")
+
+# Create resources with specific cloud contexts
+admin_hv = Hypervisor(name="hv01.example.com", cloud=admin_cloud)
+prod_hv = Hypervisor(name="hv01.example.com", cloud=prod_cloud)
+
+# These access different OpenStack environments
+print(admin_hv.status)  # Uses admin credentials
+print(prod_hv.status)   # Uses production credentials
+```
+
+## Verifying Authentication
+
+Test your OpenStack CLI configuration before using myos:
+
+```bash
+# Test admin cloud
+openstack --os-cloud admin token issue
+
+# Test production cloud
+openstack --os-cloud production project list
+
+# Test development cloud
+openstack --os-cloud development hypervisor list
+```
+
+If these commands work, myos will be able to authenticate successfully.
+
+<Tip>
+Use `openstack --os-cloud <name> token issue` to verify authentication and see token details without making other changes to your cloud.
+</Tip>
+
+## Common Authentication Issues
+
+### Configuration File Not Found
+
+**Error**: `Could not find configuration file`
+
+**Solution**: Create `~/.config/openstack/clouds.yaml` with your cloud configuration.
+
+### Invalid Cloud Name
+
+**Error**: `Could not find cloud: <name>`
+
+**Solution**: Verify the cloud name exists in your `clouds.yaml` file.
+
+### Authentication Failed
+
+**Error**: `Authentication failed`
+
+**Solution**: Check your credentials in `clouds.yaml`:
+- Verify `auth_url` is correct and accessible
+- Confirm username and password are correct
+- Ensure project_name exists
+- Check domain names match your OpenStack setup
+
+### Permission Denied
+
+**Error**: `You are not authorized to perform this action`
+
+**Solution**: The authenticated user needs appropriate roles and permissions in OpenStack. Contact your OpenStack administrator.
+
+## Security Best Practices
+
+<Warning>
+Never commit `clouds.yaml` files containing credentials to version control. Add them to `.gitignore`.
+</Warning>
+
+### File Permissions
+
+Restrict access to your configuration file:
+
+```bash
+chmod 600 ~/.config/openstack/clouds.yaml
+```
+
+### Environment-Specific Configurations
+
+Use different cloud names for different environments:
+
+- `admin` - Administrative access
+- `production` - Production read/write
+- `production-readonly` - Production read-only
+- `development` - Development environment
+- `testing` - Testing environment
+
+### Application Tokens
+
+For production applications, consider using application credentials instead of user passwords:
+
+```yaml clouds.yaml
+clouds:
+  app-production:
+    auth:
+      auth_url: https://openstack.example.com:5000/v3
+      application_credential_id: "abc123..."
+      application_credential_secret: "secret123..."
+    region_name: RegionOne
+```
+
+Application credentials provide:
+- Scoped permissions
+- No password exposure
+- Easier credential rotation
+- Better audit trails
+
+## Complete Example
+
+Here's a complete workflow from configuration to usage:
+
+### 1. Create Configuration
+
+```bash
+mkdir -p ~/.config/openstack
+cat > ~/.config/openstack/clouds.yaml << 'EOF'
+clouds:
+  admin:
+    auth:
+      auth_url: https://openstack.example.com:5000/v3
+      username: admin
+      password: secure_password
+      project_name: admin
+      user_domain_name: Default
+      project_domain_name: Default
+    region_name: RegionOne
+EOF
+
+chmod 600 ~/.config/openstack/clouds.yaml
+```
+
+### 2. Verify Configuration
+
+```bash
+openstack --os-cloud admin token issue
+```
+
+### 3. Use in myos
+
+```python
+from myos.cloud import Cloud
+
+# Authenticate using the 'admin' cloud
+cloud = Cloud("admin")
+
+# Access resources - authentication happens automatically
+projects = cloud.projects
+for project in projects:
+    print(f"Project: {project.name}")
+```
+
+## Next Steps
+
+- Explore the [Cloud class](/concepts/cloud) to understand resource access
+- Learn about individual resource types like `Hypervisor`, `Project`, and `Server`
+- Review OpenStack CLI documentation for advanced authentication options

@@ -1,0 +1,173 @@
+---
+title: "User Information"
+description: "Retrieve user details, projects, and associated resources"
+---
+
+## Overview
+
+The `User` class provides access to user information in your OpenStack cloud, including their ID, email, domain, and associated projects.
+
+## Basic User Lookup
+
+Retrieve user information by name and domain:
+
+```python
+from myos.user import User
+
+# Initialize user with name and domain
+user = User(name='wup22514', domain_name='stfc')
+
+# Access user properties
+print(user.id)
+# Output: 'd0b0337d0d3aff182ebb41ff5581ea057c18daeaaeda3b3cc56adce83d6b67d1'
+
+print(user.email)
+# Output: 'neo@matrix.net'
+```
+
+<Info>
+User properties are lazily loaded - the API is only called when you access a property for the first time.
+</Info>
+
+## Lookup by User ID
+
+You can also initialize a user object directly with their ID:
+
+```python
+from myos.user import User
+
+user = User(user_id='d0b0337d0d3aff182ebb41ff5581ea057c18daeaaeda3b3cc56adce83d6b67d1')
+
+print(user.name)
+print(user.email)
+```
+
+## User Projects
+
+Retrieve all projects that a user has access to:
+
+<CodeGroup>
+
+```python List User Projects
+from myos.user import User
+
+user = User(name='wup22514', domain_name='stfc')
+projects = user.projects
+
+for project in projects:
+    print(f"{project.id} {project.name}")
+```
+
+```python Output
+11d48058d9484acfbce827e95fd5e9fc Tier-1 Test Internal
+15098398e6fb4dffaa7fd4e8b8a15046 Jupyter-Training
+2d8252b430c2405da24d74df2004c24b Condor
+35429791ecb441f6ad8e95cccb3117f6 Cloud-Jupyter-Dev
+8e20e5fce11349f295751d834aa361b0 Cloud-Jupyter-Prod
+9c015225d10843babbc57009fc986b61 Tier-1 Prod External
+cbaff02b43104ec3a0016a177fecaf2d Tier-1 Test External
+ce3c1ed2fb19421e9bf0291a14e13256 ESC PSCS Grid Services team
+f7c59f63597648caa654c3427f8d22d3 J-C-Bejar-Scratch-Space
+fda22ac0ab7a46608a0783b74e1b5a43 Tier-1 Prod Internal
+```
+
+</CodeGroup>
+
+<Note>
+The `projects` property returns an `EntityList`, which supports advanced filtering and sorting operations. See the [Advanced Queries](/examples/advanced-queries) page for more details.
+</Note>
+
+## User Domain
+
+Access the domain associated with a user:
+
+```python
+from myos.user import User
+
+user = User(name='wup22514', domain_name='stfc')
+domain = user.domain
+
+print(domain.name)  # Output: 'stfc'
+print(domain.id)    # Output: '5b43841657b74888b449975636082a3f'
+```
+
+## User Servers
+
+Retrieve all servers created by a specific user:
+
+```python
+from myos.user import User
+
+user = User(name='wup22514', domain_name='stfc')
+servers = user.servers
+
+for server in servers:
+    print(f"Server: {server.name} ({server.id})")
+```
+
+## Complete Example
+
+Here's a comprehensive example that retrieves all user information:
+
+```python
+from myos.user import User
+
+def get_user_summary(username, domain):
+    """Get a complete summary of user information"""
+    user = User(name=username, domain_name=domain)
+    
+    print(f"User Information:")
+    print(f"  Name: {user.name}")
+    print(f"  ID: {user.id}")
+    print(f"  Email: {user.email}")
+    print(f"  Domain: {user.domain.name}")
+    
+    print(f"\nProjects ({len(user.projects)}):")
+    for project in user.projects:
+        print(f"  - {project.name}")
+    
+    print(f"\nServers ({len(user.servers)}):")
+    for server in user.servers:
+        print(f"  - {server.name}")
+
+# Run the summary
+get_user_summary('wup22514', 'stfc')
+```
+
+## Using Different Clouds
+
+By default, queries use the `admin` cloud. To query a different cloud:
+
+```python
+from myos.user import User
+from myos.cloud import Cloud
+
+# Create a custom cloud instance
+dev_cloud = Cloud("admin-dev")
+
+# Use it with a User
+user = User(name='wup22514', domain_name='stfc', cloud=dev_cloud)
+print(user.email)
+```
+
+<Tip>
+When working with multiple clouds, create a `Cloud` instance once and reuse it across multiple objects to avoid redundant configurations.
+</Tip>
+
+## Available Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `name` | str | User's username |
+| `id` | str | User's unique identifier |
+| `email` | str | User's email address |
+| `description` | str | User description/notes |
+| `domain` | Domain | User's domain object |
+| `projects` | EntityList | List of projects user has access to |
+| `servers` | EntityList | List of servers created by the user |
+
+## Next Steps
+
+- Learn about [Project Resources](/examples/project-resources)
+- Explore [Advanced Queries](/examples/advanced-queries) with EntityList
+- See [Server Details](/examples/server-details) for working with server objects

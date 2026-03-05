@@ -1,0 +1,493 @@
+---
+title: "Advanced Queries"
+description: "Master EntityList operations for filtering, sorting, and transforming data"
+---
+
+## Overview
+
+The `EntityList` class is a powerful extension of Python's built-in list that provides functional programming capabilities. All collection properties in myos (like `user.projects`, `project.servers`, etc.) return `EntityList` objects.
+
+## EntityList Basics
+
+`EntityList` supports three core operations:
+
+- **`filter()`** - Select items based on a condition
+- **`sort()`** - Order items based on a key
+- **`map()`** - Transform items to a new value
+
+All operations return new `EntityList` objects, allowing you to chain operations together.
+
+## Filtering
+
+Filter items based on a condition using a lambda function:
+
+### Filter Active Servers
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Get only active servers
+active_servers = servers.filter(lambda s: s.status == 'ACTIVE')
+
+print(f"Total servers: {len(servers)}")
+print(f"Active servers: {len(active_servers)}")
+```
+
+### Filter by Flavor
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Find all GPU servers
+gpu_servers = servers.filter(lambda s: 'gpu' in s.flavor.name.lower())
+
+for server in gpu_servers:
+    print(f"{server.name}: {server.flavor.name}")
+```
+
+### Filter by Owner
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Find servers owned by a specific user
+user_servers = servers.filter(lambda s: s.user.email == 'neo@matrix.net')
+
+print(f"Servers owned by neo@matrix.net: {len(user_servers)}")
+```
+
+<Note>
+The filter function returns a new `EntityList`, so the original list remains unchanged.
+</Note>
+
+## Sorting
+
+Sort items based on a key function:
+
+### Sort by Name
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Sort servers alphabetically by name
+sorted_servers = servers.sort(lambda s: s.name)
+
+for server in sorted_servers:
+    print(server.name)
+```
+
+### Sort by Flavor CPU (Descending)
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Sort by CPU count (highest first)
+sorted_servers = servers.sort(lambda s: -s.flavor.cpu)
+
+for server in sorted_servers:
+    print(f"{server.name}: {server.flavor.cpu} CPUs")
+```
+
+<Tip>
+Use a negative value (e.g., `-s.flavor.cpu`) to sort in descending order.
+</Tip>
+
+### Sort by RAM
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Sort by RAM (ascending)
+sorted_servers = servers.sort(lambda s: s.flavor.ram)
+
+for server in sorted_servers:
+    ram_gb = server.flavor.ram / 1024
+    print(f"{server.name}: {ram_gb:.1f} GB RAM")
+```
+
+## Mapping
+
+Transform each item to a new value:
+
+### Extract Server Names
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Get just the server names
+server_names = servers.map(lambda s: s.name)
+
+for name in server_names:
+    print(name)
+```
+
+### Extract User Emails
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+users = project.users
+
+# Get just the email addresses
+emails = users.map(lambda u: u.email)
+
+for email in emails:
+    print(email)
+```
+
+### Create Summary Tuples
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Create (name, cpu, ram) tuples
+summaries = servers.map(lambda s: (s.name, s.flavor.cpu, s.flavor.ram))
+
+for name, cpu, ram in summaries:
+    print(f"{name}: {cpu} CPUs, {ram} MB RAM")
+```
+
+## Chaining Operations
+
+Combine multiple operations for powerful queries:
+
+### Filter, Sort, and Map
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Get names of active GPU servers, sorted by CPU
+result = (servers
+    .filter(lambda s: s.status == 'ACTIVE')
+    .filter(lambda s: 'gpu' in s.flavor.name.lower())
+    .sort(lambda s: -s.flavor.cpu)
+    .map(lambda s: s.name)
+)
+
+for name in result:
+    print(name)
+```
+
+### Complex Server Analysis
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Find top 5 servers by RAM, show name and RAM
+top_ram_servers = (
+    servers
+    .filter(lambda s: s.status == 'ACTIVE')
+    .sort(lambda s: -s.flavor.ram)
+    .map(lambda s: (s.name, s.flavor.ram / 1024))  # Convert to GB
+)
+
+# Take first 5
+for i, (name, ram_gb) in enumerate(top_ram_servers):
+    if i >= 5:
+        break
+    print(f"{name}: {ram_gb:.1f} GB")
+```
+
+## Real-World Examples
+
+### Find Servers by Hypervisor Pattern
+
+```python
+from myos.cloud import Cloud
+
+cloud = Cloud("admin")
+hypervisors = cloud.hypervisors
+
+# Find all hypervisors in rack 3
+rack3_hvs = hypervisors.filter(lambda hv: 'hv3' in hv.hostname)
+
+print(f"Hypervisors in rack 3: {len(rack3_hvs)}")
+
+# Get all servers on these hypervisors
+all_servers = []
+for hv in rack3_hvs:
+    all_servers.extend(hv.servers)
+
+print(f"Total servers in rack 3: {len(all_servers)}")
+```
+
+### Resource Usage Report
+
+```python
+from myos.project import Project
+
+def project_resource_report(project_name):
+    """Generate a resource usage report for a project"""
+    project = Project(name=project_name)
+    servers = project.servers
+    
+    # Filter active servers
+    active = servers.filter(lambda s: s.status == 'ACTIVE')
+    
+    # Calculate total resources
+    total_cpu = sum(s.flavor.cpu for s in active)
+    total_ram = sum(s.flavor.ram for s in active) / 1024  # GB
+    total_disk = sum(s.flavor.disk for s in active)
+    
+    print(f"Project: {project_name}")
+    print(f"Active Servers: {len(active)}")
+    print(f"Total CPUs: {total_cpu}")
+    print(f"Total RAM: {total_ram:.1f} GB")
+    print(f"Total Disk: {total_disk} GB")
+    
+    # Group by flavor
+    print(f"\nFlavor Distribution:")
+    flavor_counts = {}
+    for server in active:
+        flavor = server.flavor.name
+        flavor_counts[flavor] = flavor_counts.get(flavor, 0) + 1
+    
+    for flavor, count in sorted(flavor_counts.items(), key=lambda x: -x[1]):
+        print(f"  {flavor}: {count}")
+
+project_resource_report('Condor')
+```
+
+### Find Duplicate Server Names
+
+```python
+from myos.cloud import Cloud
+
+cloud = Cloud("admin")
+projects = cloud.projects
+
+# Collect all server names
+all_names = []
+for project in projects:
+    servers = project.servers
+    names = servers.map(lambda s: s.name)
+    all_names.extend(names)
+
+# Find duplicates
+seen = set()
+duplicates = set()
+for name in all_names:
+    if name in seen:
+        duplicates.add(name)
+    seen.add(name)
+
+if duplicates:
+    print(f"Found {len(duplicates)} duplicate server names:")
+    for name in sorted(duplicates):
+        print(f"  - {name}")
+else:
+    print("No duplicate server names found.")
+```
+
+### User Activity Summary
+
+```python
+from myos.domain import Domain
+
+def domain_user_report(domain_name):
+    """Show which users have the most servers"""
+    domain = Domain(name=domain_name)
+    users = domain.users
+    
+    # Create list of (email, server_count) tuples
+    user_counts = users.map(lambda u: (u.email, len(u.servers)))
+    
+    # Filter users with at least one server
+    active_users = user_counts.filter(lambda x: x[1] > 0)
+    
+    # Sort by server count (descending)
+    sorted_users = active_users.sort(lambda x: -x[1])
+    
+    print(f"Domain: {domain_name}")
+    print(f"Users with servers: {len(sorted_users)}")
+    print(f"\nTop 10 users by server count:")
+    
+    for i, (email, count) in enumerate(sorted_users):
+        if i >= 10:
+            break
+        print(f"  {email}: {count} servers")
+
+# Note: This requires loading all users and their servers,
+# which may be slow for large domains
+```
+
+<Note>
+Be mindful of performance when chaining operations on large datasets. Each server/user object may trigger additional API calls.
+</Note>
+
+### Find Underutilized Resources
+
+```python
+from myos.project import Project
+
+def find_small_servers(project_name):
+    """Find active servers using minimal resources"""
+    project = Project(name=project_name)
+    servers = project.servers
+    
+    # Filter for active small servers
+    small_servers = (
+        servers
+        .filter(lambda s: s.status == 'ACTIVE')
+        .filter(lambda s: s.flavor.cpu <= 2)
+        .filter(lambda s: s.flavor.ram <= 4096)  # 4GB or less
+        .sort(lambda s: s.name)
+    )
+    
+    print(f"Small active servers in {project_name}:")
+    for server in small_servers:
+        print(f"  {server.name}:")
+        print(f"    CPUs: {server.flavor.cpu}")
+        print(f"    RAM: {server.flavor.ram / 1024:.1f} GB")
+        print(f"    Owner: {server.user.email}")
+
+find_small_servers('Condor')
+```
+
+### Hypervisor Load Balancing
+
+```python
+from myos.cloud import Cloud
+
+def analyze_hypervisor_load():
+    """Find hypervisors with unbalanced loads"""
+    cloud = Cloud("admin")
+    hypervisors = cloud.hypervisors
+    
+    # Create list of (hostname, server_count) tuples
+    loads = hypervisors.map(lambda hv: (hv.hostname, len(hv.servers)))
+    
+    # Sort by load (descending)
+    sorted_loads = loads.sort(lambda x: -x[1])
+    
+    print("Top 10 Most Loaded Hypervisors:")
+    for i, (hostname, count) in enumerate(sorted_loads):
+        if i >= 10:
+            break
+        print(f"  {hostname}: {count} servers")
+    
+    # Find underutilized
+    underutilized = loads.filter(lambda x: x[1] < 5)
+    print(f"\nUnderutilized Hypervisors (< 5 servers): {len(underutilized)}")
+
+analyze_hypervisor_load()
+```
+
+## Performance Tips
+
+<Tip>
+**Lazy Evaluation**: Properties are lazily loaded. Access them once and cache if needed:
+
+```python
+servers = project.servers  # Cache this
+for server in servers:
+    name = server.name  # Each property access may trigger API calls
+```
+</Tip>
+
+<Tip>
+**Filter Early**: Apply filters before expensive operations:
+
+```python
+# Good: Filter first, then access properties
+active = servers.filter(lambda s: s.status == 'ACTIVE')
+for server in active:
+    print(server.flavor.cpu)  # Fewer API calls
+
+# Less efficient: Access properties in filter
+gpu = servers.filter(lambda s: 'gpu' in s.flavor.name)  # More API calls
+```
+</Tip>
+
+<Tip>
+**Batch Operations**: When working with large datasets, consider processing in batches or using generators.
+</Tip>
+
+## Common Patterns
+
+### Count by Property
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Count servers by status
+status_counts = {}
+for server in servers:
+    status = server.status
+    status_counts[status] = status_counts.get(status, 0) + 1
+
+for status, count in status_counts.items():
+    print(f"{status}: {count}")
+```
+
+### Unique Values
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Get unique flavors used
+unique_flavors = set(s.flavor.name for s in servers)
+
+print(f"Unique flavors: {len(unique_flavors)}")
+for flavor in sorted(unique_flavors):
+    print(f"  - {flavor}")
+```
+
+### Aggregation
+
+```python
+from myos.project import Project
+
+project = Project(name='Condor')
+servers = project.servers
+
+# Calculate average CPU per server
+active_servers = servers.filter(lambda s: s.status == 'ACTIVE')
+total_cpu = sum(s.flavor.cpu for s in active_servers)
+average_cpu = total_cpu / len(active_servers) if active_servers else 0
+
+print(f"Average CPUs per active server: {average_cpu:.2f}")
+```
+
+## Next Steps
+
+- Apply these patterns to [User Information](/examples/user-info) queries
+- Optimize [Project Resources](/examples/project-resources) analysis
+- Build complex [Hypervisor Servers](/examples/hypervisor-servers) reports

@@ -1,0 +1,116 @@
+---
+title: 'Hypervisor'
+description: 'API reference for the Hypervisor class'
+---
+
+## Hypervisor
+
+The `Hypervisor` class provides an interface to interact with OpenStack hypervisors, allowing you to retrieve information about hypervisor hosts and the servers running on them.
+
+### Constructor
+
+```python
+Hypervisor(hypervisor_id=None, name=None, cloud=Cloud())
+```
+
+Initialize a Hypervisor instance.
+
+<ParamField path="hypervisor_id" type="str" optional>
+  The unique identifier of the hypervisor. Either `hypervisor_id` or `name` should be provided.
+</ParamField>
+
+<ParamField path="name" type="str" optional>
+  The hostname of the hypervisor. Either `hypervisor_id` or `name` should be provided.
+</ParamField>
+
+<ParamField path="cloud" type="Cloud" default="Cloud()">
+  The Cloud instance to use for OpenStack operations. Defaults to a new Cloud instance.
+</ParamField>
+
+### Properties
+
+#### hostname
+
+```python
+@property
+def hostname(self) -> str
+```
+
+<ResponseField name="hostname" type="str">
+  Returns the hostname associated to this Hypervisor.
+</ResponseField>
+
+#### name
+
+```python
+@property
+def name(self) -> str
+```
+
+<ResponseField name="name" type="str">
+  Returns the hostname associated to this Hypervisor. Note: `name` and `hostname` are the same thing for this class.
+</ResponseField>
+
+#### id
+
+```python
+@property
+def id(self) -> str
+```
+
+<ResponseField name="id" type="str">
+  Returns the hypervisor_id associated to this Hypervisor.
+</ResponseField>
+
+#### status
+
+```python
+@property
+def status(self) -> str
+```
+
+<ResponseField name="status" type="str">
+  Returns the status of this Hypervisor.
+</ResponseField>
+
+#### state
+
+```python
+@property
+def state(self) -> str
+```
+
+<ResponseField name="state" type="str">
+  Returns the state of this Hypervisor.
+</ResponseField>
+
+#### servers
+
+```python
+@property
+def servers(self) -> EntityList
+```
+
+<ResponseField name="servers" type="EntityList">
+  Returns the list of Servers running on this Hypervisor.
+</ResponseField>
+
+### Usage Example
+
+```python
+from myos.hypervisor import Hypervisor
+
+# Initialize hypervisor by name
+hv = Hypervisor(name='hv-a100x8-8.nubes.rl.ac.uk')
+
+# Access hypervisor properties
+print(hv.id)       # Get hypervisor ID
+print(hv.status)   # Get hypervisor status
+print(hv.state)    # Get hypervisor state
+
+# List servers on this hypervisor
+print(len(hv.servers))  # Count of servers
+
+for server in hv.servers:
+    print(server.id)
+```

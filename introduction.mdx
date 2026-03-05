@@ -1,0 +1,89 @@
+---
+title: "Introduction"
+description: "Python SDK for managing OpenStack cloud infrastructure with an intuitive object-oriented interface"
+---
+
+## Welcome to myos
+
+myos is a Python library that provides a simple, object-oriented interface for managing OpenStack cloud resources. It wraps the OpenStack CLI commands in a clean API that makes it easy to query and manipulate users, projects, servers, hypervisors, and other cloud resources.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get up and running with myos in minutes
+  </Card>
+  <Card title="Installation" icon="download" href="/installation">
+    Install myos and configure your environment
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/cloud">
+    Explore the complete API documentation
+  </Card>
+  <Card title="Examples" icon="lightbulb" href="/examples/user-info">
+    Learn from real-world usage examples
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Object-Oriented Design" icon="cube">
+    Work with cloud resources as Python objects with intuitive properties and methods
+  </Card>
+  <Card title="Lazy Loading" icon="gauge-high">
+    Data is fetched only when needed, keeping your queries efficient
+  </Card>
+  <Card title="Relationship Traversal" icon="diagram-project">
+    Navigate between related resources easily (user → projects → servers)
+  </Card>
+  <Card title="Multi-Cloud Support" icon="cloud">
+    Connect to different OpenStack cloud environments with flexible configuration
+  </Card>
+  <Card title="Custom Collections" icon="list">
+    EntityList provides filter, sort, and map operations for working with resource collections
+  </Card>
+  <Card title="Comprehensive Coverage" icon="grid">
+    Manage users, projects, servers, hypervisors, flavors, images, IPs, quotas, and more
+  </Card>
+</CardGroup>
+
+## Quick Example
+
+Here's how easy it is to get information about a user and their projects:
+
+```python
+from myos.user import User
+
+# Get user information
+user = User(name='username', domain_name='stfc')
+print(user.id)
+print(user.email)
+
+# List all projects the user has access to
+for project in user.projects:
+    print(f"{project.id} - {project.name}")
+```
+
+## Why myos?
+
+Managing OpenStack infrastructure often requires running multiple CLI commands and parsing JSON output. myos eliminates this complexity by:
+
+- **Simplifying queries** - No need to remember complex CLI commands or parse JSON
+- **Providing relationships** - Easily navigate from users to projects to servers
+- **Enabling efficient queries** - Lazy loading ensures you only fetch data when needed
+- **Supporting reusable patterns** - Write clean, maintainable infrastructure management code
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Installation Guide" icon="download" href="/installation">
+    Set up myos and configure OpenStack credentials
+  </Card>
+  <Card title="Quick Start Tutorial" icon="rocket" href="/quickstart">
+    Build your first myos script in under 5 minutes
+  </Card>
+  <Card title="Core Concepts" icon="book" href="/concepts/cloud">
+    Understand how myos works under the hood
+  </Card>
+  <Card title="User Guide" icon="user" href="/guides/managing-users">
+    Learn how to manage users and permissions
+  </Card>
+</CardGroup>

@@ -1,0 +1,183 @@
+---
+title: 'Project'
+description: 'Interface for managing OpenStack projects'
+---
+
+## Project
+
+The `Project` class represents an OpenStack project (tenant) and provides access to project resources including servers, users, floating IPs, and quotas.
+
+### Constructor
+
+```python
+Project(project_id=None, name=None, cloud=Cloud())
+```
+
+<ParamField path="project_id" type="str" optional>
+  The unique identifier for the project. Use either `project_id` or `name` to identify the project.
+</ParamField>
+
+<ParamField path="name" type="str" optional>
+  The name of the project. Use either `project_id` or `name` to identify the project.
+</ParamField>
+
+<ParamField path="cloud" type="Cloud" default="Cloud()">
+  The Cloud instance to use for API calls. Defaults to a new Cloud() instance.
+</ParamField>
+
+### Properties
+
+<ResponseField name="name" type="str">
+  Returns the name associated to this Project
+  
+  ```python
+  project = Project(project_id="abc123")
+  print(project.name)
+  ```
+</ResponseField>
+
+<ResponseField name="id" type="str">
+  Returns the ID associated to this Project
+  
+  ```python
+  project = Project(name="lsst-drp")
+  print(project.id)
+  ```
+</ResponseField>
+
+<ResponseField name="parent" type="Project | None">
+  Returns the parent Project associated to this Project. Returns `None` if this project has no parent.
+  
+  ```python
+  project = Project(name="child-project")
+  if project.parent:
+      print(f"Parent project: {project.parent.name}")
+  ```
+</ResponseField>
+
+<ResponseField name="tags" type="list[str]">
+  Returns the tags associated to this Project. Output is a list of strings.
+  
+  ```python
+  project = Project(name="lsst-drp")
+  tags = project.tags
+  for tag in tags:
+      print(f"Tag: {tag}")
+  ```
+</ResponseField>
+
+<ResponseField name="servers" type="EntityList[Server]">
+  Get the list of Servers currently running on this Project
+  
+  ```python
+  project = Project(name="ncas-force-U")
+  servers = project.servers
+  for server in servers:
+      print(f"Server: {server.name} - {server.status}")
+  ```
+</ResponseField>
+
+<ResponseField name="users" type="EntityList[User]">
+  Returns the list of Users with access to this Project
+  
+  ```python
+  project = Project(name="Condor")
+  users = project.users
+  for user in users:
+      print(f"User: {user.name}")
+  ```
+</ResponseField>
+
+<ResponseField name="fips" type="EntityList[FloatingIP]">
+  Returns the list of Floating IPs in this Project
+  
+  ```python
+  project = Project(name="lsst-drp")
+  fips = project.fips
+  for fip in fips:
+      print(f"Floating IP: {fip.ip}")
+  ```
+</ResponseField>
+
+<ResponseField name="quotas" type="Quota">
+  Returns the quota information for this Project
+  
+  ```python
+  project = Project(name="lsst-drp")
+  quotas = project.quotas
+  print(f"Cores: {quotas.cores}")
+  print(f"RAM: {quotas.ram}")
+  ```
+</ResponseField>
+
+### Methods
+
+<ResponseField name="add(entity)" type="None">
+  Adds an entity (e.g., User) to this Project
+  
+  ```python
+  from myos.user import User
+  
+  project = Project(name="my-project")
+  user = User(name="new-user", domain_name="stfc")
+  project.add(user)
+  ```
+</ResponseField>
+
+<ResponseField name="remove(entity)" type="None">
+  Removes an entity (e.g., User) from this Project. Currently not implemented.
+  
+  ```python
+  from myos.user import User
+  
+  project = Project(name="my-project")
+  user = User(name="old-user", domain_name="stfc")
+  project.remove(user)
+  ```
+</ResponseField>
+
+## Usage Example
+
+```python
+from myos.project import Project
+from myos.cloud import Cloud
+
+# Initialize project by name
+project = Project(name="lsst-drp")
+print(f"Project ID: {project.id}")
+
+# Get project resources
+servers = project.servers
+print(f"Total servers: {len(servers)}")
+for server in servers:
+    print(f"  - {server.name}: {server.status}")
+
+# Get project users
+users = project.users
+print(f"Total users: {len(users)}")
+for user in users:
+    print(f"  - {user.name}")
+
+# Get floating IPs
+fips = project.fips
+for fip in fips:
+    print(f"Floating IP: {fip.ip}")
+
+# Check quotas
+quotas = project.quotas
+print(f"Available cores: {quotas.cores}")
+print(f"Available RAM: {quotas.ram}")
+
+# Check parent project
+if project.parent:
+    print(f"Parent project: {project.parent.name}")
+
+# Add user to project
+from myos.user import User
+new_user = User(user_id="xyz789")
+project.add(new_user)
+
+# Use custom cloud configuration
+custom_cloud = Cloud("staging")
+project = Project(name="test-project", cloud=custom_cloud)
+```
